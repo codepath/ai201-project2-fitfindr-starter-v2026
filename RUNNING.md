@@ -6,7 +6,7 @@ Everything about how the starter works and how to use it.
 
 ## Before your first class
 
-Setup happens **before class**. The [environment setup page](../pages/ide_setup)
+Setup happens **before class**. The [environment setup page](https://courses.codepath.org/courses/ai201/pages/ide_setup)
 has the per-operating-system commands and the exact versions.
 
 **Same API key you set up in unit 1.** Nothing new to sign up for. There is one
@@ -219,7 +219,7 @@ is the most common architectural failure in production agents.
 |---|---|
 | `The planning loop isn't built yet` | Correct, at the start. That's the TODO in `agent.py` |
 | `No GEMINI_API_KEY found` | No `.env`, or the key wasn't pasted in. On Windows check it didn't save as `.env.txt` |
-| A message saying the model couldn't be reached | Usually a bad key. This is also **exactly what unit 4 Milestone 2 asks you to trigger on purpose** |
+| A message saying the model couldn't be reached | Usually a bad key. This is also **exactly what unit 4 Milestone 2 asks you to trigger on purpose** — use a query you haven't run before, or the build cache answers instead of the model and you'll see "served from cache" |
 | `[rate limit] ... Waiting 34s` | Working as intended. Leave it |
 | `[serve] another request is still running` | Also working as intended. `serve.py` answers one request at a time; yours is queued behind one that's mid-run |
 | `QuotaGuard: This session has made 300 requests` | A loop isn't ending. Find it before raising the budget |
