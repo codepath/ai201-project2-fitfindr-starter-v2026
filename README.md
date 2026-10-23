@@ -41,7 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
-
+FitFindr takes a plain-language request for a thrifted piece, such as "vintage graphic tee under $30" or "90s track jacket in size M", and searches 40 secondhand listings from Depop, Poshmark and thredUp for the best match. It then suggests one or two outfits that pair that item with pieces the user already owns, or gives general styling advice if they have no wardrobe saved. Last, it writes a short caption about the find — the fit card — that mentions the item, its price and the platform. If nothing matches the request, it stops after the search and tells the user what to change, such as dropping the size or raising the price ceiling.
 
 ---
 
@@ -59,24 +59,31 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters the 40 listings in `data/listings.json` by price and size, then ranks what is left by how many of the description's keywords appear in each listing's `title`, `description`, `category`, `style_tags`, `colors` and `brand`. Ties go to the listing with more of the keywords in its `title`. It does not call the model.
+- **Inputs:** 
+  - `description` (str) — keywords for what the user wants, e.g. `"vintage graphic tee"`. Matched case-insensitively as whole words, ignoring filler words ("a", "in", "under", "size") and a plural "s", so "sneaker" finds "sneakers".
+  - `size` (str or None) — a size to filter by; `None` skips the size filter. A listing matches when the requested size equals one whole token of its `size` field, case-insensitively, after splitting that field on spaces, slashes and brackets. So `"M"` matches `"M"`, `"S/M"` and `"M/L"` but not `"XL"`; `"8"` matches `"US 8"` but not `"US 8.5"`; `"W30"` matches `"W30 L30"`. It is never a substring test.
+  - `max_price` (float or None) — price ceiling in dollars, inclusive; `None` skips the price filter.
+- **Returns:** A `list[dict]` of at most `config.SEARCH_RESULT_LIMIT` (10) listings, highest keyword score first. Each dict is a whole listing exactly as it is in the data file: `id` (str), `title` (str), `description` (str), `category` (str), `style_tags` (list of str), `size` (str), `condition` (str), `price` (float), `colors` (list of str), `brand` (str or None — None on 32 of the 40), `platform` (str). Listings with a keyword score of zero are left out.
+- **When it has nothing:** Returns an empty list, `[]` — not `None`, and it does not raise. This is what the planning loop branches on.
 
 ### `suggest_outfit`
 
-- **What it does:**
+- **What it does:** Asks the model, through `generate()`, for one or two outfits built around a thrifted item, naming pieces the user already owns when they have any.
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `new_item` (dict) — one listing dict, in the shape `search_listings` returns. `brand` may be `None`.
+  - `wardrobe` (dict) — `{"items": [...]}`, where each item has `id` (str), `name` (str), `category` (str), `colors` (list of str), `style_tags` (list of str) and `notes` (str or None). `items` may be an empty list.
+- **Returns:** A non-empty `str` of plain text describing one or two outfits. With a non-empty wardrobe, each outfit names at least one wardrobe piece by its `name`.
+- **When it has nothing:** If `wardrobe["items"]` is empty, it still calls the model and returns a non-empty `str` of general styling advice for the item (what kinds of pieces and colors go with it), without naming any owned pieces. It never returns `""` and never raises for an empty wardrobe.
 
 ### `create_fit_card`
 
-- **What it does:**
+- **What it does:** Asks the model, through `generate()`, for a short caption the user could post about the find, written like a real post rather than a product description.
 - **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+  - `outfit` (str) — the outfit text returned by `suggest_outfit`.
+  - `new_item` (dict) — the listing dict for the item, the same one passed to `suggest_outfit`.
+- **Returns:** A `str` caption of two to four sentences that mentions the item, its `price` and its `platform` once each. It varies from run to run and between items, because `config.TEMPERATURE` is 0.9.
+- **When it has nothing:** If `outfit` is empty or only whitespace, it does not call the model and returns the fixed message `"No fit card: there was no outfit suggestion to write a caption from."` It does not raise.
 
 ---
 
@@ -93,13 +100,24 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in `session["error"]` saying what the user could change (drop the size, raise the price ceiling, or use fewer keywords) and return the session without calling `suggest_outfit` or `create_fit_card`. Otherwise take the first result as `session["selected_item"]` and go on to `suggest_outfit`, then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** 
+With regular expressions, in `agent.py::parse_query`. No model call. It takes the price ceiling first ("under $30", "below 30", "max $30", or a bare "$30"), then the size ("size M", "in size US 8", "size medium", or a capitalised size on its own such as "XL" or "W29"), and whatever text is left becomes the description. A query with no size or no price gives `None` for that field, which turns that filter off in `search_listings`.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** 
+Each time round the loop, `run_agent` looks at the session, runs the one step it is missing, and writes the result back before the next step reads it. In order:
+
+1. `query` and `wardrobe` — set when the session is created.
+2. `parsed` — `{"description", "size", "max_price"}` from `parse_query(query)`.
+3. `search_results` — the list `search_listings` returned for `parsed`. If it is empty, `error` is set and the run ends here.
+4. `selected_item` — `search_results[0]`.
+5. `outfit_suggestion` — what `suggest_outfit(selected_item, wardrobe)` returned.
+6. `fit_card` — what `create_fit_card(outfit_suggestion, selected_item)` returned.
+
+`steps` records the name of each step as it finishes, so a finished session shows how far the run got. `error` stays `None` unless the run ended early. The loop calls `trace.check_iterations` every time round, so it cannot run past `MAX_ITERATIONS`.
 
 ---
 
@@ -113,25 +131,63 @@
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
 
+  Found:    Graphic Tee — 2003 Tour Bootleg Style — $24.0 on depop
+
+  Outfit:   Outfit 1: Channel a grunge streetwear vibe by pairing the Graphic Tee — 2003 Tour Bootleg Style with Baggy straight-leg jeans, dark wash. Add the Black combat boots and the Black crossbody bag to complete the look. 
+
+Outfit 2: For an edgy layered style, wear the Graphic Tee — 2003 Tour Bootleg Style tucked into Wide-leg khaki trousers. Layer the Vintage black denim jacket on top, and finish with Chunky white sneakers.
+
+  Fit card: Scored this sick faded graphic tee on depop for only $24 and the worn-in cotton feels amazing. It has that ultimate boxy grunge look that makes every streetwear fit effortless. Can not wait to style it with baggy denim and beat-up boots.
+
+1 model calls this session, 1 served from cache, 294 prompt + 54 output tokens
+```
+
+And the other side of the branch, a query nothing matches:
+
+```
+$ python app.py ask 'designer ballgown size XXS under $5'
+
+  No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.
+
+0 model calls this session
 ```
 
 **The three tools, tested one at a time**
 
 ```
 $ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
-
+[{'id': 'lst_006', 'title': 'Graphic Tee — 2003 Tour Bootleg Style', 'description': 'Vintage-style bootleg tee with faded graphic. Slightly boxy fit. 100% cotton, soft and worn-in.', 'category': 'tops', 'style_tags': ['graphic tee', 'vintage', 'grunge', 'streetwear', 'band tee'], 'size': 'L', 'condition': 'good', 'price': 24.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_002', 'title': 'Y2K Baby Tee — Butterfly Print', 'description': 'Super cute early 2000s baby tee with butterfly graphic. Fitted crop length. Tag says medium but fits like a small.', 'category': 'tops', 'style_tags': ['y2k', 'vintage', 'graphic tee', 'cottagecore'], 'size': 'S/M', 'condition': 'excellent', 'price': 18.0, 'colors': ['white', 'pink', 'purple'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_033', 'title': 'Vintage Band Tee — Faded Grey', 'description': 'Faded grey band-style tee with distressed graphic. Crew neck. Fits boxy. Well-loved but no holes or major damage.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'band tee', 'graphic tee', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 19.0, 'colors': ['grey', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_017', 'title': 'Mesh Long-Sleeve Top — Black', 'description': 'Sheer black mesh long-sleeve. Great for layering under a graphic tee or over a bralette. Stretchy material, fits true to size.', 'category': 'tops', 'style_tags': ['y2k', 'grunge', 'goth', 'layering'], 'size': 'S/M', 'condition': 'excellent', 'price': 15.0, 'colors': ['black'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_015', 'title': 'Vintage Graphic Hoodie — Faded Black', 'description': 'Faded black pullover hoodie with barely-visible vintage graphic on the chest. Cozy interior. Some pilling but adds to the worn-in look.', 'category': 'tops', 'style_tags': ['vintage', 'grunge', 'graphic', 'streetwear'], 'size': 'L', 'condition': 'fair', 'price': 26.0, 'colors': ['black', 'charcoal'], 'brand': None, 'platform': 'depop'}, {'id': 'lst_011', 'title': 'Low-Rise Cargo Pants — Khaki', 'description': 'Y2K era low-rise cargo pants. Lots of pockets. Khaki color, slightly distressed at the hems. Great for layering with a long tee.', 'category': 'bottoms', 'style_tags': ['y2k', 'cargo', '2000s', 'streetwear'], 'size': 'W29', 'condition': 'fair', 'price': 27.0, 'colors': ['khaki', 'tan'], 'brand': None, 'platform': 'poshmark'}, {'id': 'lst_012', 'title': 'Oversized Crewneck Sweatshirt — Vintage Navy', 'description': 'Perfectly faded navy crewneck. Genuinely vintage — not manufactured distressed. Ribbed cuffs and hem. No graphics, clean.', 'category': 'tops', 'style_tags': ['vintage', 'basics', 'oversized', 'classic'], 'size': 'XL (fits oversized)', 'condition': 'good', 'price': 20.0, 'colors': ['navy'], 'brand': None, 'platform': 'thredUp'}]
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+Outfit one combines the Vintage Levi's 501 Jeans — Medium Wash with the White ribbed tank top, Vintage black denim jacket, and Chunky white sneakers. Add the Black crossbody bag for an easy streetwear look. 
 
+Outfit two pairs the Vintage Levi's 501 Jeans — Medium Wash with the Oversized grey crewneck sweatshirt layered underneath the Vintage black denim jacket. Complete this cozy, classic outfit with the Black combat boots and the Brown leather belt.
 ```
 
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+Scored these vintage Levi's 501 jeans on depop for $38 and they have the ultimate relaxed streetwear vibe. The knee fading makes them look like they have real history already. I cannot wait to style them with a simple pair of fresh white sneakers.
+```
 
+**The same three with nothing to give**
+
+```
+$ python -c "from tools import search_listings; print(search_listings('designer ballgown', size='XXS', max_price=5))"
+[]
+```
+
+```
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_empty_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_empty_wardrobe()))"
+Grab these classic Levi 501s for sure. For an effortless casual look, pair them with a slightly oversized graphic t-shirt tucked in, a vintage leather belt, and retro white sneakers or chunky loafers. Layer with an unbuttoned flannel or a distressed denim jacket for a cool double-denim moment. Alternatively, dress them up by styling them with a fitted black ribbed turtleneck, a tailored double-breasted blazer in houndstooth or camel, and pointed-toe leather boots. Add a structured secondhand handbag and minimal gold jewelry to elevate the vintage denim into something chic and timeless.
+```
+
+```
+$ python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('   ', load_listings()[0]))"
+No fit card: there was no outfit suggestion to write a caption from.
 ```
 
 ---
@@ -147,15 +203,27 @@ $ python -c "from tools import create_fit_card; ..."
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for: To clarify the task at hand and what I should do, look out for and keep in mind
+- *What came back: An easy to understand approach of how to complete the project and what to consider as I work through it
+- *What I changed: My approach to how I manuever through this project rather than just doing im supposed but being mindful on the lesson its planning*
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Claude to build the planning loop in `agent.py::run_agent` from my branch rule and run both paths.
+- *What came back:* A working loop, but in the empty-wardrobe test run the fit card for the $45 track jacket read "for forty five dollars". My criterion 4 checks for the price as a number, so that card would have failed it.
+- *What I changed:* The system prompt in `tools.py::create_fit_card` now says to write the price as a dollar figure, like $24, never in words. Every completed card in the eval runs after that had the price as a figure.
+
+**Moment 3 (unit 4)**
+
+- *What I asked for:* I asked Claude to trigger the three failures again (empty search, empty wardrobe, a bad key) and read each message the way a user who can't see the code would.
+- *What came back:* All three were handled, but it pointed out that the model-unavailable message ended "Check GEMINI_API_KEY in your .env and try again" whatever the cause. My first after run had 13 tries fail on the provider's 503 error, and every one of them told the user to check a key that was fine.
+- *What I changed:* `agent.py::_model_unavailable` now passes on the reason `generate.py` already works out, so a rejected key, a dropped connection and a provider error each give a different next step.
+
+**Moment 4 (unit 4)**
+
+- *What I asked for:* I asked Claude to score every try in both saved run logs again, without looking at my verdicts first, and compare.
+- *What came back:* No verdict changed. It did find two gaps in the write-up: the Run Log had pasted output for criterion 3 only, and my criterion 3 verdict rested on a title in the trace where the criterion asks for an id. One sentence it first drafted for the README said four of the five sneaker cards opened the same way; the run log shows three, and it corrected that before it went in.
+- *What I changed:* The README now has real output for all five criteria, the second-pass tables, and a re-run of the search showing `lst_004` is the first result by id. I kept my targets as written, including criterion 5, which the same pass showed was probably set too low.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
@@ -176,18 +244,250 @@ $ python -c "from tools import create_fit_card; ..."
      into results/. Paste it here and fill in the verdicts. -->
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| --------- | ------ | ----- | ----- | ----- | ----- | ----- | ------- |
+| 1. A matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. The item that was found is the item that was styled | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. The fit card is a postable caption about this item | 4 of 5, and 5 different first sentences | PASS | PASS | PASS | PASS | PASS | MET (5/5, 5 different) |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
+Each criterion was scored on its own scenario in `scenarios.py`:
+
+| # | Scenario query | Wardrobe |
+|---|---|---|
+| 1 | `vintage graphic tee under $30` | example |
+| 2 | `designer ballgown size XXS under $5` | example |
+| 3 | `90s track jacket in size M` | example |
+| 4 | `denim jacket under $50` | example |
+| 5 | `platform sneakers size 8` | example |
+
+The run also included one diagnostic scenario that is not one of the five (`denim jacket under $50` with the empty wardrobe). It completed 5 of 5 tries.
+
+The whole run is in `results/run_2026-10-04_2109_before.md`: 6 scenarios, 5 tries each, caching off, temperature 0.9, 50 model calls. It was taken before `search_listings` was moved onto MCP.
+
+**Real output from one try of each criterion**, pasted as text, naming the file and function
 that produced it:
 
+Criterion 1, try 1. Produced by `run_eval.py::main` calling `agent.py::run_agent`; the trace lines come from the `trace.step` calls inside `run_agent`.
+
+```
+### matching query completes
+
+- Query: `vintage graphic tee under $30`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Graphic Tee — 2003 Tour Bootleg Style ($24.0, depop)
+- search_results: 10
+
+Outfit suggestion:
+
+Outfit 1:
+Graphic Tee — 2003 Tour Bootleg Style
+Baggy straight-leg jeans, dark wash
+Vintage black denim jacket
+Black combat boots
+Black crossbody bag
+
+Outfit 2:
+Graphic Tee — 2003 Tour Bootleg Style
+Wide-leg khaki trousers
+Brown leather belt
+Chunky white sneakers
+Black cropped zip hoodie
+
+Fit card:
+
+Scored this perfectly faded 2003 tour bootleg graphic tee on depop for $24. The cotton is already super soft and has that exact broken-in grunge vibe I live for. Can not wait to style this with baggy denim and combat boots for an effortless weekend look.
+
+Trace:
+
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+[2] search_listings
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 10 items: Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey, Y2K Baby Tee — Butterfly Print … +7 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 10
+      out: lst_006 Graphic Tee — 2003 Tour Bootleg Style
+[4] suggest_outfit
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, wardrobe=10 items
+      out: Outfit 1: Graphic Tee — 2003 Tour Bootleg Style Baggy straight-leg jeans, dark wash Vintage black denim jacket…
+[5] create_fit_card
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, outfit=288 chars
+      out: Scored this perfectly faded 2003 tour bootleg graphic tee on depop for $24. The cotton is already super soft a…
 ```
 
+Criterion 2, try 1. Same file and function. `fit_card` stays `None` and the trace has two steps, because `run_agent` returns at the empty-search branch.
+
+```
+### impossible query stops early
+
+- Query: `designer ballgown size XXS under $5`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: yes — No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.
+- selected_item: (none)
+- search_results: 0
+
+Trace:
+
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+[2] search_listings
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
+```
+
+Criterion 3, try 1. Same file and function.
+
+```
+### found item is the styled item
+
+- Query: `90s track jacket in size M`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: 90s Track Jacket — Navy/White Stripe ($45.0, poshmark)
+- search_results: 4
+
+Outfit suggestion:
+
+Outfit 1: Sporty Streetwear
+Layer your 90s Track Jacket — Navy/White Stripe over the White ribbed tank top. Pair them with your Baggy straight-leg jeans, dark wash secured by the Brown leather belt. Finish the look with your Chunky white sneakers and Black crossbody bag for an effortless 90s athletic vibe.
+
+Outfit 2: Casual Retro
+Wear the 90s Track Jacket — Navy/White Stripe zipped up over the White ribbed tank top, paired with your Wide-leg khaki trousers. Complete this relaxed, vintage-inspired outfit using your Chunky white sneakers and Black crossbody bag.
+
+Fit card:
+
+Scored this vintage Champion 90s track jacket on Poshmark and it has the ultimate sporty streetwear vibe. It was a steal at $45 and is going to be my go-to for layering all season long. Can not wait to style this with baggy jeans and chunky sneakers.
+
+Trace:
+
+[1] parse_query
+      in:  90s track jacket in size M
+      out: {'description': '90s track jacket', 'size': 'M', 'max_price': None}
+[2] search_listings
+      in:  {'description': '90s track jacket', 'size': 'M', 'max_price': None}
+      out: 4 items: 90s Track Jacket — Navy/White Stripe, 90s Leather Bomber — Black, 90s Silk Slip Dress — Floral, Midi Length … +1 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 4
+      out: lst_004 90s Track Jacket — Navy/White Stripe
+[4] suggest_outfit
+      in:  new_item=lst_004 90s Track Jacket — Navy/White Stripe, wardrobe=10 items
+      out: Outfit 1: Sporty Streetwear Layer your 90s Track Jacket — Navy/White Stripe over the White ribbed tank top. Pa…
+[5] create_fit_card
+      in:  new_item=lst_004 90s Track Jacket — Navy/White Stripe, outfit=566 chars
+      out: Scored this vintage Champion 90s track jacket on Poshmark and it has the ultimate sporty streetwear vibe. It w…
+```
+
+Criterion 4, try 1. Same file and function. The fit card text comes from `tools.py::create_fit_card`.
+
+```
+### fit card is a postable caption
+
+- Query: `denim jacket under $50`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Denim Jacket — Light Wash, Cropped ($42.0, poshmark)
+- search_results: 7
+
+Outfit suggestion:
+
+Outfit 1:
+Denim Jacket — Light Wash, Cropped
+White ribbed tank top
+Baggy straight-leg jeans, dark wash
+Chunky white sneakers
+Black crossbody bag
+
+Outfit 2:
+Denim Jacket — Light Wash, Cropped
+Oversized grey crewneck sweatshirt
+Wide-leg khaki trousers
+Chunky white sneakers
+
+Fit card:
+
+Scored this vintage Wrangler denim jacket on Poshmark for $42 and the structured shoulders give it the ultimate effortless streetwear vibe. I am obsessed with the light wash and can already tell it is going to be my go-to outerwear piece for throwing over oversized crewnecks all fall.
+
+Trace:
+
+[1] parse_query
+      in:  denim jacket under $50
+      out: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+[2] search_listings
+      in:  {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+      out: 7 items: Denim Jacket — Light Wash, Cropped, 90s Track Jacket — Navy/White Stripe, High-Waisted Denim Shorts — Cutoff … +4 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 7
+      out: lst_007 Denim Jacket — Light Wash, Cropped
+[4] suggest_outfit
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, wardrobe=10 items
+      out: Outfit 1: Denim Jacket — Light Wash, Cropped White ribbed tank top Baggy straight-leg jeans, dark wash Chunky …
+[5] create_fit_card
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, outfit=271 chars
+      out: Scored this vintage Wrangler denim jacket on Poshmark for $42 and the structured shoulders give it the ultimat…
+```
+
+Criterion 5, try 1. Same file and function. The outfit text comes from `tools.py::suggest_outfit`.
+
+```
+### outfit uses owned pieces
+
+- Query: `platform sneakers size 8`
+- Wardrobe: example
+
+**Try 1**
+
+- stopped early: no
+- selected_item: Platform Sneakers — White Chunky Sole ($48.0, poshmark)
+- search_results: 1
+
+Outfit suggestion:
+
+Outfit one: Pair your Platform Sneakers — White Chunky Sole with the Baggy straight-leg jeans, dark wash and the White ribbed tank top. Layer the Oversized grey crewneck sweatshirt on top and finish with the Black crossbody bag for an effortless streetwear look.
+
+Outfit two: Style the Platform Sneakers — White Chunky Sole with the Wide-leg khaki trousers and the White ribbed tank top. Throw on the Vintage black denim jacket and accessorize with the Brown leather belt for a cool Y2K-inspired casual outfit.
+
+Fit card:
+
+Found these chunky white platform sneakers on Poshmark for $48 and they have the ultimate late 90s streetwear vibe. The little bit of sole yellowing just makes them look authentically vintage instead of brand new. Can not wait to style these with some baggy dark wash denim and a basic white tank.
+
+Trace:
+
+[1] parse_query
+      in:  platform sneakers size 8
+      out: {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+[2] search_listings
+      in:  {'description': 'platform sneakers', 'size': '8', 'max_price': None}
+      out: 1 items: Platform Sneakers — White Chunky Sole
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 1
+      out: lst_019 Platform Sneakers — White Chunky Sole
+[4] suggest_outfit
+      in:  new_item=lst_019 Platform Sneakers — White Chunky Sole, wardrobe=10 items
+      out: Outfit one: Pair your Platform Sneakers — White Chunky Sole with the Baggy straight-leg jeans, dark wash and t…
+[5] create_fit_card
+      in:  new_item=lst_019 Platform Sneakers — White Chunky Sole, outfit=510 chars
+      out: Found these chunky white platform sneakers on Poshmark for $48 and they have the ultimate late 90s streetwear …
 ```
 
 ---
@@ -211,16 +511,67 @@ that produced it:
      three. -->
 
 | # | Criterion | Target | Verdict | How I decided |
-|---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| - | --------- | ------ | ------- | ------------- |
+| 1 | A matching query completes all three tools | 4 of 5 | MET (5/5) | A try passes when `session["error"]` is `None`, the trace shows `search_listings`, `suggest_outfit` and `create_fit_card` in that order, and `fit_card` is a non-empty string. All five did; the cards were 234 to 326 characters. |
+| 2 | An impossible query stops before the second tool | 5 of 5 | MET (5/5) | A try passes when the trace ends at `search_listings` with `[] (empty)`, there is no `suggest_outfit` step, `fit_card` is `None`, and the message names something to change. All five traces have two steps, and the message says to drop the size (XXS), raise the $5 ceiling, or use more general words. |
+| 3 | The item that was found is the item that was styled | 5 of 5 | MET (5/5) | A try passes when the same listing id appears as the `select_item` output and as the `new_item` input of both `suggest_outfit` and `create_fit_card` in the trace, and it is the first search result. All five show `lst_004` in all three places, and "90s Track Jacket — Navy/White Stripe" is the first title in the `search_listings` output. |
+| 4 | The fit card is a postable caption about this item | 4 of 5, and 5 different first sentences | MET (5/5, 5 different) | A card passes when it has two to four sentences and contains "42" and "poshmark" (ignoring case). I counted sentences by splitting on ". ", "! " and "? ". The five cards had 2, 2, 3, 3 and 3 sentences, and every one had both facts. No two first sentences were word-for-word the same. |
+| 5 | Outfits use pieces the user actually owns | 4 of 5 | MET (5/5) | A try passes when the outfit text contains at least one wardrobe item's `name` exactly (ignoring case) and no piece outside the wardrobe is presented as owned. I searched each outfit for the ten names, then read each one for invented pieces. Each try named six or seven wardrobe pieces exactly, and the only other item mentioned was the sneakers being bought. |
 
 **Diagnoses**
 
+No criterion was missed, so there is no miss to place in a tool, the branch, the session or the model's output. Three things in the output are worth recording anyway, because each one is a way these verdicts could be weaker than they look.
 
+1. **Criterion 4's first-sentence rule passed without showing much variety (model output).** The five first sentences differ, but all five open "Scored this … Wrangler denim jacket on Poshmark for $42 and …". The rule only fails on a word-for-word repeat, so cards that differ by two adjectives count as different. The mechanism is in `tools.py::create_fit_card`: the system prompt asks for the item, price and platform once each, and the model satisfies all three in the opening clause every time, which leaves only the adjectives free to change.
+
+2. **A repeated first sentence did turn up, in a different scenario (model output).** In the criterion 5 scenario, tries 2 and 3 both opened with "Scored these chunky white platform sneakers with major late 90s energy on Poshmark for $48." Criterion 4 was not scored on that scenario, so the verdict stands, but the same rule applied there would have found only 4 different first sentences out of 5. Caching was off, so these were two real answers.
+
+3. **Criterion 3's check on the first search result uses the title, not the id (the trace).** The trace prints search results as titles, so for `search_results[0]` I matched the title, while the other two places show the id. `search_listings` has no model in it and returns the same list every time, so I am confident in the verdict, but it is weaker evidence than the criterion asks for.
+
+Each criterion was run on one query taken from the starter's example list, so 5 of 5 everywhere says these five queries work, not that every phrasing does. Criterion 1's reason predicted misses from phrasings the keyword search can't match, and none of these queries tested that.
+
+**The pattern**
+
+Diagnoses 1 and 2 are one problem, not two. Both are fit cards opening the same way, both come from the same prompt in `tools.py::create_fit_card`, and the same thing shows in every scenario that reached a fit card: the track jacket cards all began "Scored this vintage Champion" or "Just scored this vintage Champion", and three of the five sneaker cards began "Scored these chunky white platform sneakers", with a fourth one letter off ("Score these chunky white platform sneakers"). It is the model's output, caused by the prompt, and it is the only pattern in the run. Nothing went wrong in a tool, the branch or the session on any of the 25 tries.
+
+**Were the targets low?**
+
+Nothing was missed, so this needs a plain answer for each one.
+
+- **Criteria 2 and 3** are at 5 of 5 already and came in at 5 of 5. They cannot be set higher.
+- **Criterion 1** is at 4 of 5 and came in at 5 of 5, but I do not think it was low. The allowance was for a model call failing, and that is exactly what happened in the after run, where it scored 2 of 5.
+- **Criterion 4** was too easy, and not because of its number. Its second rule ("no two cards have the same first sentence") passed five cards that all opened the same way. That is a criterion measuring the wrong thing, so I revised it in `criteria.md`, with the original left in place above the revision: no two of the 5 cards may begin with the same first five words. The new rule is harder, and the before run misses it with 3 different openings out of 5.
+- **Criterion 5** is the one I would tighten next. I set 4 of 5 because I expected the model to paraphrase wardrobe names ("your combat boots") and it never did: every outfit in both runs, 10 of 10, named six or seven pieces exactly and invented none. On this evidence the target should be 5 of 5. I have not changed it, because raising a target after seeing the results is still fitting the target to the results.
+
+**Closing the gap in diagnosis 3**
+
+Criterion 3 asks for the id of `search_results[0]`, and the trace only shows its title. To check that the title is enough, I ran the same search again, both directly and through MCP: `search_listings('90s track jacket', 'M', None)` returns ids `lst_004`, `lst_022`, `lst_013`, `lst_032` in that order, and the four titles are all different. So the first title in the trace can only be `lst_004`, which is the id the other two places show. The verdict stays MET. The trace should still print the id, and that is listed under What's Still Broken.
+
+**Second pass over the scoring**
+
+After the table was filled in, every try in both saved run logs was scored a second time from the output in `results/`, with a short script for the parts that can be counted (trace steps, listing ids, sentence count, price and platform in the card, exact wardrobe names, first five words) and by reading the outfits for the part that can't (a piece presented as owned that is not in the wardrobe). No verdict changed.
+
+Before run, `results/run_2026-10-04_2109_before.md`:
+
+| Criterion | Target | Second pass | What was checked on each try |
+| --------- | ------ | ----------- | ---------------------------- |
+| 1. A matching query completes all three tools | 4 of 5 | 5/5 | `stopped early: no`, five trace steps in order, a fit card of 234 to 326 characters |
+| 2. An impossible query stops before the second tool | 5 of 5 | 5/5 | The trace ends at `search_listings` with `[] (empty)`, there is no `suggest_outfit` step, and the message names the size, the price ceiling and the wording as things to change |
+| 3. The item that was found is the item that was styled | 5 of 5 | 5/5 | `lst_004` is the `select_item` output and the `new_item` of both `suggest_outfit` and `create_fit_card`; the first search result's title matches it |
+| 4. The fit card is a postable caption about this item | 4 of 5, and 5 different first sentences | 5/5, 5 different | 2, 2, 3, 3 and 3 sentences; every card contains "42" and "Poshmark"; under the revised rule, 3 different five-word openings |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | 5/5 | 6 or 7 exact wardrobe names per outfit, and no piece outside the wardrobe presented as owned |
+
+After run, `results/run_2026-10-04_2125_after.md`:
+
+| Criterion | Target | Second pass | What was checked on each try |
+| --------- | ------ | ----------- | ---------------------------- |
+| 1. A matching query completes all three tools | 4 of 5 | 2/5 (FAIL, FAIL, PASS, FAIL, PASS) | Tries 1 and 2 stopped at `suggest_outfit` and try 4 at `create_fit_card`; tries 3 and 5 have five steps and a fit card |
+| 2. An impossible query stops before the second tool | 5 of 5 | 5/5 | Same two-step trace and message as before |
+| 3. The item that was found is the item that was styled | 5 of 5 | 5/5 | `lst_004` in all three places on every try |
+| 4. The fit card is a postable caption about this item | 4 of 5, and (revised) 5 different first-five-word openings | 5/5 cards, 4 different openings | Three sentences, "42" and "Poshmark" in every card; tries 3 and 4 both begin "I had been hunting for" |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | 5/5 | 6 or 7 exact wardrobe names per outfit, and no piece outside the wardrobe presented as owned |
+
+The same pass confirmed the opening counts quoted under The Improvement: the track jacket scenario went from 2 different five-word openings to 5, and the platform sneakers from 3 to 5. It did not close the gap in diagnosis 3: the first search result is still matched by title, because the trace does not print its id.
 
 ---
 
@@ -239,21 +590,125 @@ that produced it:
 **Happy path**
 
 ```
+$ python app.py ask 'vintage graphic tee under $30' --trace
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'vintage graphic tee', 'size': None, 'max_price': 30.0}
+      out: 10 items: Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey, Y2K Baby Tee — Butterfly Print … +7 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 10
+      out: lst_006 Graphic Tee — 2003 Tour Bootleg Style
+[4] suggest_outfit
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, wardrobe=10 items
+      out: Outfit 1: Channel a grunge streetwear vibe by pairing the Graphic Tee — 2003 Tour Bootleg Style with Baggy str…
+[5] create_fit_card
+      in:  new_item=lst_006 Graphic Tee — 2003 Tour Bootleg Style, outfit=421 chars
+      out: I am so excited to wear this vintage style graphic tee tucked into wide leg khaki trousers with a black denim …
 
+  Found:    Graphic Tee — 2003 Tour Bootleg Style — $24.0 on depop
+
+  Outfit:   Outfit 1: Channel a grunge streetwear vibe by pairing the Graphic Tee — 2003 Tour Bootleg Style with Baggy straight-leg jeans, dark wash. Add the Black combat boots and the Black crossbody bag to complete the look. 
+
+Outfit 2: For an edgy layered style, wear the Graphic Tee — 2003 Tour Bootleg Style tucked into Wide-leg khaki trousers. Layer the Vintage black denim jacket on top, and finish with Chunky white sneakers.
+
+  Fit card: I am so excited to wear this vintage style graphic tee tucked into wide leg khaki trousers with a black denim jacket thrown over top. The boxy fit gives it the ultimate grunge streetwear vibe that is so hard to track down. I found it on depop and still cannot believe it only cost $24.
+
+1 model calls this session, 1 served from cache, 332 prompt + 62 output tokens
 ```
 
 **Empty search**
 
 ```
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
 
+  No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'.
+
+0 model calls this session
 ```
 
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+The happy path has five steps and the empty search has two: it ends at `search_listings (via MCP)` with `[] (empty)`, and `suggest_outfit` and `create_fit_card` never run.
 
+**The other two failure modes**
 
+Empty wardrobe. The run completes; `suggest_outfit` receives `wardrobe=0 items` and returns general advice that names no owned pieces:
+
+```
+$ python app.py ask 'denim jacket under $50' --empty-wardrobe --trace
+(running with an empty wardrobe)
+[1] parse_query
+      in:  denim jacket under $50
+      out: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+      out: 7 items: Denim Jacket — Light Wash, Cropped, 90s Track Jacket — Navy/White Stripe, High-Waisted Denim Shorts — Cutoff … +4 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 7
+      out: lst_007 Denim Jacket — Light Wash, Cropped
+[4] suggest_outfit
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, wardrobe=0 items
+      out: That vintage Wrangler jacket is a fantastic find for any wardrobe. For a classic casual look, layer it over a …
+[5] create_fit_card
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped, outfit=625 chars
+      out: My old cropped denim jacket finally bit the dust, so I had been on the hunt for a boxy replacement with some a…
+
+  Found:    Denim Jacket — Light Wash, Cropped — $42.0 on poshmark
+
+  Outfit:   That vintage Wrangler jacket is a fantastic find for any wardrobe. For a classic casual look, layer it over a fitted black ribbed turtleneck and pair it with high-waisted wide-leg black trousers and chunky white sneakers. The structured shoulders will balance the relaxed pants, and the light blue denim pops beautifully against black. For an effortless streetwear vibe, throw it on over a vintage graphic tee and an olive green slip skirt, finished off with well-worn canvas sneakers. Since the wash is so versatile, you can also easily pair it with floral midi dresses or monochrome sweatsuits for an instant style upgrade.
+
+  Fit card: My old cropped denim jacket finally bit the dust, so I had been on the hunt for a boxy replacement with some actual structure. This Wrangler piece delivers on the shoulders and has that perfect effortless streetwear vibe. I picked it up on Poshmark for $42 and honestly cannot wait to wear it with everything.
+
+2 model calls this session, 520 prompt + 184 output tokens
+```
+
+Model unreachable, triggered on purpose with a bad key. `agent.py::run_agent` catches `ModelUnavailable`, keeps the item the search found, and ends with a message in `session["error"]` instead of a stack trace:
+
+```
+$ GEMINI_API_KEY=not-a-real-key AI201_CACHE=0 python app.py ask 'denim jacket under $50' --trace
+[1] parse_query
+      in:  denim jacket under $50
+      out: {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'denim jacket', 'size': None, 'max_price': 50.0}
+      out: 7 items: Denim Jacket — Light Wash, Cropped, 90s Track Jacket — Navy/White Stripe, High-Waisted Denim Shorts — Cutoff … +4 more
+      →    branch: results found, going on to select an item
+[3] select_item
+      in:  search_results[0] of 7
+      out: lst_007 Denim Jacket — Light Wash, Cropped
+[4] suggest_outfit
+      in:  new_item=lst_007 Denim Jacket — Light Wash, Cropped
+      →    model unavailable, stopping: The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+
+  Found Denim Jacket — Light Wash, Cropped ($42 on poshmark), but it couldn't be styled. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+
+1 model calls this session
+```
+
+**What the agent said, each time**
+
+| Failure | How I triggered it | What the agent said |
+|---|---|---|
+| Empty search | `'designer ballgown size XXS under $5'` | "No listings matched 'designer ballgown' in size XXS under $5. Try dropping the size (XXS), raising the $5 price ceiling, or using fewer or more general words, like 'jacket' or 'tee'." |
+| Empty wardrobe | `'denim jacket under $50' --empty-wardrobe` | No error. It found the denim jacket and gave general advice that names no owned pieces, starting "That vintage Wrangler jacket is a fantastic find for any wardrobe. For a classic casual look, layer it over a fitted black ribbed turtleneck…", then wrote the fit card. |
+| Model unavailable | `GEMINI_API_KEY=not-a-real-key AI201_CACHE=0`, a query that finds listings | "Found Denim Jacket — Light Wash, Cropped ($42 on poshmark), but it couldn't be styled. The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com." |
+
+None of the three crashed or went silent. I changed one message after reading them as a user would. The model-unavailable message used to end "Check GEMINI_API_KEY in your .env and try again" whatever the cause, so a dropped connection or a wrong model name also told the user to check a key that was fine. `agent.py::_model_unavailable` now passes on the reason `generate.py` already works out, so the three causes it tells apart (rejected key, model name that doesn't resolve, no connection) each give a different next step. The files in `results/` were written before this change and still show the old wording.
+
+**On the MCP move:** `search_listings` is the tool I moved. In `mcp_server.py` I registered it with `@mcp.tool()`, with the same three typed inputs as the Tool Inventory (`description: str`, `size: str | None`, `max_price: float | None`) and a description that states the size rule, the units of the price, the fields in each listing and the empty case. In `agent.py::run_agent` the direct call `search_listings(...)` became `call_tool("search_listings", {...})` from `mcp_client.py`, and the trace step is now named `search_listings (via MCP)`.
+
+Nothing changed in what comes back. I compared the two for the same inputs and they were equal: `search_listings('graphic tee', None, 30) == call_tool('search_listings', {...})` printed `True`, both a `list` of 7 listing dicts, and the impossible query came back as `[]` through MCP as well, so the branch needed no change. The one thing I added is a handler for `MCPError`: if the server can't be started, the run ends with a message in `session["error"]` saying the search couldn't be reached. Each search now starts the server, asks, and stops it, so a run is slower by about a second.
+
+The run in **Run Log — Before** was taken with the direct call, before this move. The after run below went through MCP.
 
 ---
 
@@ -264,26 +719,44 @@ full. -->
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** One thing, in `tools.py::create_fit_card`. The prompt now tells the model what to open the caption with, picked at random from six openings in `_OPENINGS` (how you'll wear it, the detail that made you buy it, how long you'd been hunting, the mood it puts you in, a question to followers, what it replaces in your closet). It also says not to start with "Scored" or "Just scored", and that the price and platform can come later in the caption.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** Diagnosis 1 above: every fit card for one item opened the same way. No criterion was missed in the before run, but criterion 4 passed only because its second rule could not see the problem, so I revised that rule in `criteria.md` (the original is still there, with the revision under it): no two of the 5 cards may begin with the same first five words. Scored that way, the before run misses: its five cards began "Scored this vintage Wrangler denim" (tries 1 and 5), "Scored this cropped Wrangler denim" (tries 2 and 3) and "Scored this Wrangler denim jacket" (try 4), which is 3 different openings out of 5. The diagnosis placed the cause in the prompt, which asked for item, price and platform and left the model to put all three in the first clause, so the prompt is what I changed.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
-|---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| --------- | ------ | ----- | ----- | ----- | ----- | ----- | ------- |
+| 1. A matching query completes all three tools | 4 of 5 | FAIL | FAIL | PASS | FAIL | PASS | MISSED (2/5) |
+| 2. An impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. The item that was found is the item that was styled | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. The fit card is a postable caption about this item | 4 of 5, and (revised) 5 different first-five-word openings | PASS | PASS | PASS | PASS | PASS | MISSED as revised (5/5 cards pass, but 4 different openings of 5); MET as first written |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Did it help, and how do I know:**
+Same six scenarios as the before run, 5 tries each, caching off, in `results/run_2026-10-04_2125_after.md` (48 model calls).
+
+**Before and after, side by side**
+
+| Criterion | Target | Before | After | Change |
+| --------- | ------ | ------ | ----- | ------ |
+| 1. A matching query completes all three tools | 4 of 5 | MET (5/5) | MISSED (2/5) | Worse, from the provider's 503 errors and not from the change |
+| 2. An impossible query stops before the second tool | 5 of 5 | MET (5/5) | MET (5/5) | Same |
+| 3. The item that was found is the item that was styled | 5 of 5 | MET (5/5) | MET (5/5) | Same |
+| 4. Cards with two to four sentences, the price and the platform | 4 of 5 | 5/5 | 5/5 | Same |
+| 4. Different first-five-word openings (revised rule) | 5 of 5 | 3 of 5 | 4 of 5 | Better, still MISSED |
+| 5. Outfits use pieces the user actually owns | 4 of 5 | MET (5/5) | MET (5/5) | Same |
+
+This is the second after run. The first, `results/run_2026-10-04_2119_after.md`, lost 13 of its 30 tries to the model provider returning `503 UNAVAILABLE … This model is currently experiencing high demand`, so it could not measure the change. I kept the file and re-ran once the model was answering again. The second run still lost 4 tries to the same error, and those are counted above as they fell.
+
+**Did it help, and how do I know:** Partly. The change helped the openings it was aimed at, from 3 different out of 5 to 4, but not enough to meet the revised target. A different criterion also missed in the same run, for an unrelated reason.
+
+- **Criterion 4, the openings:** up from 3 different openings out of 5 to 4 out of 5 on the criterion 4 scenario. The five cards began "Who needs a boring basic", "Those structured shoulders immediately sold", "I had been hunting for", "I had been hunting for" and "Those structured shoulders are everything". None begins with "Scored", where all five did before. It still misses, because tries 3 and 4 share their first five words. The cause is in the change itself: `random.choice` picks one of six openings independently for each card, so five cards will usually repeat at least one, and two cards given "how long you had been hunting" both began "I had been hunting for".
+- **Criterion 4, the rest:** unchanged. All five cards still have three sentences, "$42" and "Poshmark", so moving the price later in the caption did not make the model drop it.
+- **Other scenarios, same check:** the track jacket went from 2 different openings out of 5 to 5 out of 5, and the platform sneakers from 3 to 5.
+- **Criterion 1 got worse, from 5/5 to 2/5, and the change did not cause it.** Tries 1 and 2 stopped at `suggest_outfit` and try 4 at `create_fit_card`, each with the provider's 503 "high demand" error in the trace. The place is the loop and the adapter, not the model's output: `generate.py::generate` retries only rate-limit errors, so a 503 raises `ModelUnavailable` at once, and `run_agent` ends the run on the first one. The handler did its job — each try ended with a message naming the item that was found, not a stack trace — but a run that stops is still not a fit card, so those tries fail.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
-
-
 
 ---
 
@@ -293,7 +766,16 @@ full. -->
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
 
+**Criterion 1 — a matching query completes all three tools (MISSED 2/5 in the after run).** A temporary 503 from the model provider ends the run, because nothing retries it. I would retry a failed model step once or twice in `run_agent`, with a short wait, before giving up with the current message. I stopped because the miss showed up in the after run, after my one improvement was already made and measured, and adding a second change would have meant I could no longer say which change moved which number.
 
+**Criterion 4 — the fit card, as revised (MISSED, 4 different openings of 5).** Picking the opening at random lets two cards draw the same one. I would stop picking independently: either rotate through the openings so five cards in a row cannot repeat, or drop the fixed list and have the prompt name a different detail of the listing each time. Rotation needs the tool to remember what it used last, and `create_fit_card` keeps nothing between calls today, which is why I did not do it here.
+
+**Things that pass but that I do not fully trust:**
+
+- **Criterion 3's evidence.** The trace prints search results as titles, so the check that `search_results[0]` is the selected item compares a title while the other two places compare the id. Printing the first result's id in the `search_listings (via MCP)` step would close that.
+- **One query per criterion.** Every criterion was scored on a single query from the starter's example list. Criterion 1's reason said the keyword search would miss some phrasings ("tee shirt" for "graphic tee"), and no scenario tried one, so the misses I did get came from somewhere I had not predicted.
+- **The search has no notion of meaning.** "denim jacket under $50" returns seven listings including denim shorts and a track jacket, because each shares one word. The first result has been right in every run, and only the first is used, but nothing guarantees that.
+- **The Sample Run section is from before the improvement.** Its fit cards were produced by the earlier prompt, so re-running those commands now gives captions that open differently.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
