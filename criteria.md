@@ -29,6 +29,15 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
 
+`search_listings` is a plain keyword match that drops every listing scoring
+zero, and the query is parsed in code before it gets there. A phrasing whose
+words are not in a listing's title, description or tags ("tee shirt" for
+"graphic tee") or whose size or price the parser reads wrongly can come back
+empty even though a matching listing exists. On top of that, the second and
+third tools each call the model, so one failed call in two per run ends the
+run. One miss in five allows for that; two would mean the search or the
+parsing is actually broken.
+
 ---
 
 ## 2. An impossible query stops before the second tool
@@ -40,9 +49,14 @@ Given a query that matches no listings, the agent stops before calling
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
 
+This path never reaches the model. Parsing, `search_listings` and the branch
+are all plain code, so the same query gives the same result every time —
+there is nothing random to excuse a miss. If it fails once it fails five
+times, which makes anything below 5 of 5 a bug in the branch, not bad luck.
+
 ---
 
-## 3. Something about state
+## 3. The item that was found is the item that was styled
 
 <!-- YOU WRITE THIS ONE.
 
@@ -54,15 +68,24 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+Given a query that matches at least one listing, three listing ids are the
+same: the `id` of `session["search_results"][0]`, the `id` of
+`session["selected_item"]`, and the `id` of the `new_item` that
+`suggest_outfit` and `create_fit_card` were actually called with, as shown in
+the trace — 5 of 5 tries.
 
 **Why this target:**
 
-
+Choosing the item and handing it on is plain code with no model in it, so it
+cannot be right some of the time: either the loop reads the item back out of
+the session or it doesn't. 5 of 5 is the only honest target. I compare ids
+instead of titles because two listings can have similar titles, and I check
+the tool's real input instead of only the session because a loop can store
+the right item and still pass a different one.
 
 ---
 
-## 4. Something about the fit card
+## 4. The fit card is a postable caption about this item
 
 <!-- YOU WRITE THIS ONE.
 
@@ -75,15 +98,39 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
-
+For the same matching query run 5 times, a fit card passes when it is two to
+four sentences long and contains both the selected item's price (the number,
+e.g. "24") and its platform name (e.g. "depop") — at least 4 of 5 cards pass.
+In addition, no two of the 5 cards have the same first sentence.
 
 **Why this target:**
 
+The price and the platform are the two facts a reader needs to go and find
+the item, and they are the two things the model is most likely to drop when
+it writes something that sounds like a post. I can check both by searching
+the text, and sentence count by counting. It is 4 of 5 and not 5 of 5 because
+the model writes this at temperature 0.9: it will sometimes run to a fifth
+sentence or write "thrifted" without naming the platform, and the tool does
+not re-check its own output. The first-sentence rule is 5 of 5 because at
+that temperature a repeated opening means the cache is on or the prompt is
+dictating the wording, and either is a fault I can fix.
 
+> **Revised in unit 4:** The first part is unchanged (two to four sentences,
+> with the price and the platform, in at least 4 of 5 cards). The second part
+> becomes: no two of the 5 cards begin with the same first five words.
+>
+> **Why revised:** "the same first sentence" turned out not to measure what I
+> meant. In the before run all five cards opened "Scored this … Wrangler
+> denim jacket on Poshmark for $42 and …", and they still counted as five
+> different sentences because an adjective changed further along. Comparing
+> the first five words catches cards that open the same way, and it is still
+> something I can count. This makes the target harder, not easier: the before
+> run, which passed the original wording, has only 3 different openings out
+> of 5 under this one.
 
 ---
 
-## 5. Your choice
+## 5. Outfits use pieces the user actually owns
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -92,11 +139,20 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+Given a matching query and the example wardrobe, the outfit suggestion
+contains the `name` of at least one wardrobe item (ignoring upper and lower
+case, e.g. "black combat boots") and names no piece as owned that is not in
+the wardrobe — in at least 4 of 5 tries.
 
 **Why this target:**
 
-
+Using the wardrobe is the whole point of `suggest_outfit`; without it the
+user gets advice any search engine could give. The wardrobe goes into the
+prompt, so the model should use it, but it tends to paraphrase ("your combat
+boots" for "Black combat boots") or add a piece the user doesn't have. An
+exact-name check will count a paraphrase as a miss, so I allow one in five.
+I am not loosening it to "mentions something similar" because I couldn't
+score that the same way twice.
 
 ---
 
@@ -131,3 +187,209 @@ Given a query that matches no listings, the agent stops before calling
      A number you missed stays where it is, gets diagnosed, and gets a fix
      attempted. That's where the points are.
      ───────────────────────────────────────────────────────────────────────── -->
+
+---
+
+<!-- ═══════════════════ UNIT 9 — DEPLOY AND INSTRUMENT ═══════════════════ -->
+
+# Deployment criteria — unit 9 (shape A, hosted on Render)
+
+Written **before** the first hosted measurement. Each one is scored from the
+committed run records in `results/deploy_hosted_*.md`, which `measure.py`
+writes. The sessions are defined up front, so the denominators can't drift:
+
+- **3 sessions**, each started after at least 15 minutes with no traffic, so
+  each one begins with Render waking a sleeping instance.
+- Each session is `python measure.py --url <service> --rounds 3`: one
+  `GET /health`, then 5 requests × 3 rounds = **15 `/ask` requests**. Of
+  those, 9 are full runs (two matching queries and one with an empty
+  wardrobe), 3 have no match and 3 are bad requests.
+- Across all 3 sessions: 3 cold starts, **45 `/ask` requests**, 27 full runs.
+
+D1–D4 were committed before any scored session. D5 was added afterwards
+(see its note), so it is scored only on sessions that started after it was
+committed.
+
+**Which sessions are scored (fixed before they ran):** the "before" result
+set is the three sessions run with `--label before`, saved as
+`results/deploy_before_*`. All five criteria are scored together on exactly
+those three: `python measure.py --score results/deploy_before_*.json`. A
+session that `measure.py` marks NOT COLD is kept in the repo but replaced by
+a re-run, so the set stays three cold sessions. The earlier
+`deploy_hosted_*` and `deploy_trial-*` sessions are trial runs. They stay
+committed and are not scored. The "after" set (Milestone 6) follows the same
+rule with `--label after`.
+
+> **Clarified after before-session 1, before session 2:** the NOT COLD
+> replacement rule is for sessions where the instance was **awake**. It does
+> not cover sessions where the instance **crashed** and took its logs with
+> it. Before-session 1 (`deploy_before_2026-11-12_152949`) woke the
+> instance: `/health` took 42.8 s, against ~0.4 s when warm. Then the
+> instance went down mid-session. All 14 of its remaining requests returned
+> 502, and Render restarted it at 15:32:13 UTC. With the logs gone,
+> `measure.py` can't prove the cold start and marks it NOT COLD. Replacing
+> it would quietly drop a crash from the results, so **it stays in the
+> scored set**. Its D1 is reported as unprovable, and its misses count
+> against D2–D5. This can only make the results worse, not better.
+
+"Warm" means any `/ask` whose log line has `nth_since_boot` > 1, so it is not
+the first request the process served. "Cold confirmed" means the session's
+first `/ask` has `nth_since_boot` = 1, which proves the instance really
+restarted. `/health` isn't logged, so it doesn't count toward
+`nth_since_boot`.
+
+---
+
+## D1. A cold start answers within a minute
+
+In each session, the first `GET /health` returns 200 within **60 s** measured
+from the client, and that session's first `/ask` has `nth_since_boot` = 1 —
+**3 of 3 sessions**.
+
+**Why this target:**
+
+The client measures this because the server can't. While Render is waking
+the instance, my process doesn't exist yet, so `request_log.py` has nothing
+to time. Render describes the free-tier spin-up as about a minute. On top of
+that, my boot only imports Flask, `google-genai` and my own modules, and
+`data/listings.json` holds just 40 listings. Nothing loads a model and nothing
+reads a large file. So anything over 60 s would come from my import path, not
+from the platform, and that's worth knowing. It's 3 of 3, not 2 of 3,
+because there are only three cold starts to look at. If one of them is over
+a minute, a user hits that wait one time in three. The `nth_since_boot` check
+is there so a session where the instance never actually slept can't pass as
+a fast cold start.
+
+> **Revised in unit 9, before any hosted result:** a session counts as cold
+> when the server's `uptime_s` at the first `/ask` is **no greater than the
+> seconds elapsed since the session started** (measured by `measure.py`),
+> instead of when `nth_since_boot` = 1. A session that isn't cold doesn't
+> count toward the 3 and has to be re-run after 15 idle minutes. The 60 s
+> target and the 3 of 3 are unchanged.
+>
+> **Why revised:** `nth_since_boot` = 1 couldn't tell a woken instance from
+> one that was already awake and just hadn't served an `/ask` yet, because
+> `/health` isn't logged. Right after a deploy, an awake instance would have
+> passed as a 0.2 s "cold start". Comparing uptime against session time
+> proves the process didn't exist when the session began. This makes D1
+> harder to pass, not easier.
+
+---
+
+## D2. Warm full runs are fast at the median and bounded at the tail
+
+Across the 27 full runs (outcome `complete`), counting only warm ones, the
+client-side round trip has **p50 ≤ 8 s** and **p95 ≤ 75 s**, and none
+returns 5xx.
+
+**Why this target:**
+
+On my laptop a full run took about 2.2 s: one MCP subprocess spawn for
+`search_listings` plus two model calls. The model calls wait on the network,
+so Render shouldn't change them much. Spawning the MCP subprocess starts a
+whole new Python interpreter that imports `mcp`, and that work is CPU-bound.
+The free tier's 0.1 CPU could make it close to ten times slower than on my
+laptop. 8 s covers that and still fails if something else is slow.
+
+The tail target is set by `generate.py`, not by the hosting. A session sends
+18 model calls in roughly a minute, and `generate.py` paces at 15 a minute,
+so I expect about one run per session to wait out the rest of the minute
+(up to ~60 s). With 27 runs, p95 is the 26th slowest, so the 3 expected
+pacing waits are inside it. 75 s allows exactly one pacing wait per run.
+A run that waited twice, or one that got a 429 the pacing should have
+prevented, would go past it. The no-5xx part checks that `--timeout 300` does
+its job: gunicorn's default 30 s would have killed exactly the runs that
+were waiting.
+
+---
+
+## D3. Every request leaves exactly one log line, and the line tells the truth
+
+Each of the 45 `/ask` requests has **exactly one** line in `/logs` with the
+same `request_id` as its `X-Request-Id` header. That line's `outcome` agrees
+with what the client got back (`complete`, `no_match`, `bad_request`, ...) —
+**45 of 45**.
+
+**Why this target:**
+
+The log line is written by code on the response path. No model is involved
+and nothing in it is random, so it can't be right only some of the time.
+Anything short of 45 of 45 is a bug. A run that crashed might log the wrong
+outcome, or none, which is exactly when I'd need the log. The one realistic
+way to lose a line is outside my code: if gunicorn kills a worker or Render
+restarts the instance mid-session, the request gets no response and
+`/logs` loses its memory. I'm counting that as a miss on purpose, because a
+log that disappears when the instance restarts is the failure this criterion
+is meant to catch. The agreement check is there because one line per request
+is easy to get. A line with `outcome: complete` on a request that actually
+failed is worse than no line at all.
+
+---
+
+## D4. Peak memory stays under half the plan
+
+In every session, the highest `peak_rss_mb + children_peak_rss_mb` among
+that session's log lines is **≤ 256 MB** — **3 of 3 sessions**.
+
+**Why this target:**
+
+The free plan has 512 MB. Locally, the server peaked at about 101 MB and the
+MCP subprocess at about 58 MB, 159 MB in total. Python on Linux can come out
+somewhat higher. 256 MB is half the plan, and I chose half for a reason:
+`serve.py`'s lock is the only thing that stops two agent runs, and two MCP
+subprocesses, from running at once. If the lock ever failed, a second copy
+of the work would still fit under 512 MB rather than getting the instance
+OOM-killed. The children figure is the largest single MCP subprocess, not a
+sum. That's correct here because the lock means only one runs at a time.
+
+---
+
+## D5. One full run costs two model calls and under 1,000 tokens
+
+Across the full runs in 3 sessions, the mean `prompt_tokens + output_tokens`
+per run is **≤ 1,000**. Also, every full run makes **exactly 2** model calls
+and every no-match or bad request makes **0**, judged by the `model_calls`
+field in each request's log line. That means **45 of 45** requests have the
+expected call count.
+
+**Why this target:**
+
+This is the cost number, measured per request on the deployment. It comes
+from the service's own token counts in `request_log.py`, not from a pricing
+page. A full run is two model calls, `suggest_outfit` and `create_fit_card`.
+The prompts are fixed: the listing, the 10-item wardrobe, and the outfit text
+handed on to the fit card. So prompt tokens hardly move, and nearly all the
+variation is output length at temperature 0.9. Unscored local runs and the
+unscored trial session came in at roughly 650–950 tokens per full run. The
+empty-wardrobe runs are the cheap end. 1,000 is the mean those runs suggest
+with a little room for longer outputs, so it is not a free pass. If the mean
+goes over, the prompts or outputs have grown.
+
+The call count is 45 of 45 because `generate.py` counts every attempt,
+including retries. A 429 that gets retried shows up as a third call on a
+full run. On Render there is one process and `generate.py` paces itself at
+15 a minute, so the service should never push back. A run with 3 calls means
+paying for a call that the pacing was supposed to prevent. A no-match run
+with any model call means the branch leaked. Both are bugs, not noise.
+
+How cost is turned into money for the README: tokens × the model's published
+per-token price. Compute time is reported alongside, as the mean `agent_ms`
+per full run.
+
+> **Revised after the after sessions ran, measurement only:** a
+> `bad_request` log line has no `model_calls` field, because `serve.py`
+> rejects the request before `run_agent()` and `generate.py` are reached.
+> `measure.py` was reading that absent field as "not 0" and counting every
+> bad request as a call-count miss: 6 of the after set's misses. It now
+> counts an absent field on a `bad_request` line as 0 calls, which is what
+> happened. The target is unchanged: still 2 calls per full run, 0 otherwise,
+> 45 of 45. The before set is unaffected (none of its lines survived).
+
+> **Added after sessions had run:** D1–D4 and the session plan were committed
+> first (`8dae3c2`). The brief asks for five criteria and I had four, so D5
+> was written at 2026-11-12T03:56Z, after four hosted sessions had been
+> recorded, **without opening those session records**. To keep D5 a
+> before-the-results criterion, `measure.py` scores it only on sessions that
+> **started after D5 was committed**. The earlier sessions don't count toward
+> its 3.
+
