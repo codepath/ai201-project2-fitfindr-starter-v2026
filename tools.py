@@ -38,17 +38,37 @@ def _keywords(text: str) -> set[str]:
 
 
 def _size_tokens(size: str) -> set[str]:
-    cleaned = re.sub(r"\([^)]*\)", " ", size or "") # drop parentheticals
-    parts = [p.strip().upper() for p in cleaned.split("/")]
-    return {p for p in parts if p}
+    """
+    Every token a size can be matched on.
+
+    "S/M" -> {"S", "M"}; "W30 L30" -> {"W30 L30", "W30", "L30"};
+    "US 8.5" -> {"US 8.5"}. Shoe sizes stay whole ("US 8" is one token), so
+    "US 8" never matches "US 8.5" and a lone "8" never matches anything.
+    """
+    cleaned = re.sub(r"\([^)]*\)", " ", size or "")  # drop parentheticals
+    tokens = set()
+    for part in cleaned.split("/"):
+        part = re.sub(r"\s+", " ", part).strip().upper()
+        if not part:
+            continue
+        tokens.add(part)
+        if not part.startswith("US "):
+            # waist + inseam ("W30 L30") is two sizes in one string
+            tokens.update(w for w in part.split(" ") if re.fullmatch(r"[WL]\d{2}", w))
+    return tokens
+
+
+def _is_numeric_size(size: str) -> bool:
+    return bool(re.fullmatch(r"(US \d{1,2}(\.5)?|W\d{2})", (size or "").strip().upper()))
 
 
 def _size_matches(wanted: str, listing_size: str) -> bool:
     if not wanted:
         return True
     listing_tokens = _size_tokens(listing_size)
+    # "One Size" fits any letter size, but it is not a shoe or waist size.
     if any(token.startswith("ONE SIZE") for token in listing_tokens):
-        return True
+        return not _is_numeric_size(wanted)
     return bool(_size_tokens(wanted) & listing_tokens)
 
 def search_listings(
