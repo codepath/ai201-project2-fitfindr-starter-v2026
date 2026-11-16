@@ -850,5 +850,18 @@ service is under the most load.
 
 **How I Used AI**
 
-⟨TODO — yours to write: two specific moments, what you asked, what you got,
-what you changed⟩
+**Moment 1: Choosing the project**
+- *What I asked:* I gave Claude the assignment and asked which project I should pick.
+- *What it gave me:* It recommended FitFindr with numeric sizes.
+- *What I changed:* Nothing. I agreed it was a good fit and went with it.
+
+**Moment 2: Writing the acceptance criteria**
+- *What I asked:* I asked Claude for help writing my criteria.
+- *What it gave me:* Instead of writing them for me, it had me choose the metrics, set the targets, and explain my reasons myself, and then it helped me turn my notes into English.
+- *What I changed:* For A2, I first thought the search didn't need to be right every time. Then I realized the size filter is a straight comparison against the listings data with no model involved, so each query has one clear correct answer, and even one wrong-size listing means showing the user something they can't wear. So I raised the target to 4 out of 4 in every trial.
+
+**What Claude wrote and what I did**
+
+To be clear about authorship: Claude wrote most of the code and most of this README. That includes the extension code (numeric size parsing and matching), the structured logging, `capstone_eval.py`, the improved 503 retry handling, and most of the Capstone section of this README.
+
+My part was deciding what the system had to achieve and checking whether it did. I chose the metrics, targets, and reasoning for each criterion in `criteria.md`. I ran every test myself on my own computer, reviewed the results, and decided what to submit.
