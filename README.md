@@ -528,3 +528,98 @@ about the agent:
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
+
+---
+
+## Capstone
+
+**What This Extends**
+
+FitFindr (project 2): the agent that parses a shopping query, searches
+secondhand listings over MCP, suggests an outfit and writes a fit card. What's
+new: the query parser and the size filter now understand **numeric sizes**.
+Shoe sizes (`size 8`, `size 8.5`, `size 8 1/2`, `US 9`) and waist sizes
+(`W27`, `waist 28`, `28 waist`) are pulled out of the query, turned into the
+format the listings use (`US 8`, `W28`), and used as a real filter in
+`search_listings`. Before this, "platform sneakers size 8" searched with no
+size filter at all and left the `8` in the description as a keyword (I listed
+this under What's Still Broken in unit 4). When nobody stocks the size, the
+empty-search message now names the size. Every request to the HTTP service
+also writes a structured log record, and the run is timed per stage.
+
+**The Shape**
+
+Shape C, extend one capability: numeric size parsing and matching.
+The capability is `agent.py::_parse_size` (new) plus the size matching in
+`tools.py::_size_tokens` / `_size_matches` (changed so `US 8` never matches
+`US 8.5`, `W30` matches `W30 L30`, and "One Size" no longer matches a shoe or
+waist size). The run path and the log are carried alongside, as every shape
+requires.
+
+Out of scope, on purpose:
+- I'm not converting between size systems (EU/UK shoe sizes, waist in cm, or
+  "M ≈ W30"). Only the US/W forms that already exist in `listings.json`.
+- I'm not changing keyword search, ranking, or which listing gets selected.
+- I'm not touching the two model prompts (`suggest_outfit`, `create_fit_card`)
+  or the price formatting ("$30.0") I noted in unit 4.
+- I'm not deploying to a host (Path B only), and not adding a UI.
+
+Stretch, declared before starting: **a latency breakdown** — every log record
+carries `timings_ms` for parse, search_listings (MCP), suggest_outfit and
+create_fit_card.
+
+**Running It**
+
+Path B, local with logs. One command starts the service: `python serve.py`.
+Exact steps, environment and versions are in [RUNNING.md](RUNNING.md) under
+"Capstone run path". The test run is `python capstone_eval.py --label before`,
+which sends every request through the same `POST /ask` route, so every test
+request is also a log record.
+
+**Instrumentation**
+
+Every request to `serve.py::ask` writes one JSON line to `logs/runs.jsonl`
+(`runlog.py::write`), including rejected input (400), agent errors and crashes
+(500). Fields: `ts`, `request_id`, `status`, `outcome`
+(`fit_card` / `empty_search` / `agent_error` / `rejected` / `crash`), `query`
+(what came in), `parsed` (description, size, max_price), `size_kind`
+(`letter` / `shoe` / `waist`), `n_results`, `result_sizes`, `selected`,
+`fit_card` (what went out), `error`, `duration_ms` (end to end), `timings_ms`
+(per stage), `model_calls`, `cache_hits`, `prompt_tokens`, `output_tokens`,
+`total_tokens` (from Gemini's `usage_metadata`, as a before/after difference of
+`generate.token_counts()` around the run).
+
+Read it back with `python runlog.py 12`.
+
+⟨TODO: paste at least 10 entries from `logs/runs.jsonl` here, including at
+least one failed run (the F1/F2 400s and the F3 model-down record count).⟩
+
+**What It Costs**
+
+⟨TODO after `python capstone_eval.py --cost 10`: mean tokens per run
+(prompt + output), mean seconds per run, and the method below.⟩
+
+Method: `capstone_eval.py --cost 10` sends `platform sneakers size 8` ten
+times through `POST /ask` with the cache off. Each run's tokens are the
+difference in `generate.token_counts()` before and after that run, which is
+what the Gemini API reported in `usage_metadata`, not a number from the
+pricing page. Results land in `results/capstone_cost_<timestamp>.json`.
+
+Hundred people a day: ⟨mean tokens⟩ × 100 = ⟨N⟩ tokens/day, ⟨2 × 100 = 200⟩
+model requests/day.
+
+**Run Log and Verdicts**
+
+⟨TODO⟩
+
+**The Improvement**
+
+⟨TODO⟩
+
+**What's Still Broken**
+
+⟨TODO⟩
+
+**How I Used AI**
+
+⟨TODO⟩

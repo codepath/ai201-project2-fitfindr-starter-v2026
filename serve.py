@@ -27,15 +27,14 @@ web server has to be. The reason is worth reading before you deploy: see the
 note above `_one_at_a_time` below — it also decides which gunicorn worker you
 can use.
 
-⚠️ There is deliberately NO logging, NO timing and NO request counting in this
-file. That is unit 9's follow-along: you instrument this yourself, first, and
-then deploy it. A structured log you were handed teaches you nothing about
-what belongs in one — and the timing field is the one everybody skips.
+CAPSTONE: every request (including rejected input and crashes) now writes one
+structured record to logs/runs.jsonl — see runlog.py for the fields.
 """
 
 import os
 import sys
 import threading
+import time
 
 # config first, and before anything that talks to the model: it loads your .env
 # and fixes the Windows console encoding for every module that imports it.
@@ -43,6 +42,8 @@ import config  # noqa: F401
 
 from flask import Flask, jsonify, request
 
+import generate
+import runlog
 from agent import run_agent
 from utils.data_loader import get_example_wardrobe
 
@@ -107,12 +108,28 @@ def ask():
                                                 example wardrobe the CLI uses.
     Out:  the session dict from run_agent(), as JSON.
     """
-    payload = request.get_json(silent=True) or {}
-    query = (payload.get("query") or "").strip()
+    t_start = time.perf_counter()
+    request_id = runlog.new_request_id()
+    ts = runlog.now_iso()
+
+    payload = request.get_json(silent=True)
+    raw_query = payload.get("query") if isinstance(payload, dict) else None
+    query = raw_query.strip() if isinstance(raw_query, str) else ""
     if not query:
         # 400 rather than a stack trace: the caller can act on this one.
-        return jsonify({"error": "Send JSON with a 'query' field, e.g. "
-                                 '{"query": "vintage graphic tee under $30"}'}), 400
+        message = ("Send JSON with a 'query' field, e.g. "
+                   '{"query": "vintage graphic tee under $30"}')
+        runlog.write({
+            "ts": ts, "request_id": request_id, "status": 400, "outcome": "rejected",
+            "query": raw_query if raw_query is not None else request.get_data(as_text=True)[:200],
+            **runlog.record_from_session(None),
+            "error": message,
+            "duration_ms": round((time.perf_counter() - t_start) * 1000, 1),
+            "model_calls": 0, "cache_hits": 0,
+            "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0,
+        })
+        return jsonify({"error": message}), 400
+    payload = payload or {}
 
     wardrobe = payload.get("wardrobe")
     if not isinstance(wardrobe, dict):
@@ -139,16 +156,49 @@ def ask():
     failure = None
     session = None
     with _one_at_a_time:
+        # Counters are module globals in generate.py, so the difference
+        # before/after this run is exactly what this run used. Safe because
+        # runs are serialised by the lock.
+        tokens_before = generate.token_counts()
+        calls_before = generate.call_count()
+        cache_before = generate._cache_hits
         try:
             session = run_agent(query, wardrobe)
         except Exception as exc:  # noqa: BLE001 — a 500 with a sentence beats a hang
             failure = f"{type(exc).__name__}: {exc}"
+        tokens_after = generate.token_counts()
+        calls = generate.call_count() - calls_before
+        cache_hits = generate._cache_hits - cache_before
 
     # Outside the lock: building a response is not work the next caller should
     # be waiting on.
+    status = 500 if failure is not None else 200
     if failure is not None:
-        return jsonify({"error": failure}), 500
+        outcome, error = "crash", failure
+    elif session.get("error"):
+        outcome = "empty_search" if not session.get("search_results") and \
+            "No listings matched" in session["error"] else "agent_error"
+        error = session["error"]
+    else:
+        outcome, error = "fit_card", None
 
+    runlog.write({
+        "ts": ts, "request_id": request_id, "status": status, "outcome": outcome,
+        "query": query,
+        **runlog.record_from_session(session),
+        "error": error,
+        "duration_ms": round((time.perf_counter() - t_start) * 1000, 1),
+        "model_calls": calls,
+        "cache_hits": cache_hits,
+        "prompt_tokens": tokens_after["prompt"] - tokens_before["prompt"],
+        "output_tokens": tokens_after["output"] - tokens_before["output"],
+        "total_tokens": tokens_after["total"] - tokens_before["total"],
+    })
+
+    if failure is not None:
+        return jsonify({"error": failure, "request_id": request_id}), 500
+
+    session["request_id"] = request_id
     return jsonify(session)
 
 
