@@ -756,11 +756,97 @@ when a test sends ~20 requests a minute.
 
 **The Improvement**
 
-⟨after run pending⟩
+*What I changed:* `generate.py::generate` now treats a 503 "UNAVAILABLE /
+high demand" error as temporary and retries it with a short backoff (2 s,
+4 s, 8 s, capped at 10 s, up to `MAX_RETRIES` = 5 attempts). Only when every
+attempt fails does it raise `ModelUnavailable`. A bad key or any other error
+still fails on the first attempt, as before.
+
+*Why:* it follows the diagnosis above. The one run that failed in the before
+set (run 3, S3) failed because a 503 was treated like a dead key.
+
+*How I measured it:* a real 503 is random, so re-running the same five
+criteria can't show whether the fix helped. Google just might not be busy.
+So I added scenario **F4** to `capstone_eval.py`: the model API answers
+`503 UNAVAILABLE ... high demand` on the first call and then behaves normally
+(the client is wrapped in `run_scenario`; everything else is the real API).
+F4 is new in the after run, so it has no before column. Without the fix it
+would have ended exactly like the real S3 failure. The next step after the
+503 is `raise ModelUnavailable`, and F3 shows that path in every run.
+
+Run with `python capstone_eval.py --label after`. Full output:
+`results/capstone_after_2026-11-16_0009.md` and `.json`.
+
+| Criterion | Target | Before 1 | Before 2 | Before 3 | After 1 | After 2 | After 3 | Before → After |
+|---|---|---|---|---|---|---|---|---|
+| 1. Numeric sizes parsed right | 5 of 5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | MET → MET |
+| 2. Returned listings match size | 4 of 4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | MET → MET |
+| 3. Unstocked size stops, names it | 1 of 1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | MET → MET |
+| 4. Original queries still work | ≥ 1 of 2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | MET → MET |
+| 5. Malformed request → 400 | 2 of 2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | MET → MET |
+| *F4. Model busy once → still a fit card* | 1 of 1 | — | — | — | 1/1 | 1/1 | 1/1 | new |
+| *Numeric-size query ends in a fit card* | — | 4/4 | 4/4 | 3/4 | 4/4 | 4/4 | 4/4 | |
+| *Every request logged* | — | 10/10 | 10/10 | 10/10 | 11/11 | 11/11 | 11/11 | |
+| *Runs under 10 s (S1–S4, R1–R2)* | — | 6/6 | 5/6 | 5/6 | 6/6 | 6/6 | 6/6 | |
+
+Real output from after run 1, F4 (`capstone_eval.py::run_scenario` →
+`serve.py::ask` → `agent.py::run_agent` → `generate.py::generate`):
+```
+[40] select_item
+      out: Platform Sneakers — White Chunky Sole ($48.0, poshmark)
+  [busy] the model service is overloaded (503). Waiting 2s and trying again (attempt 1 of 5).
+[41] suggest_outfit
+      out: Here are two practical outfit ideas incorporating the new **Platform Sneakers** and pieces from your wardrobe:…
+  [rate limit] service pushed back. Waiting 41s (attempt 1 of 5). This is the limiter doing its job, not a bug.
+[42] create_fit_card
+      out: Channel ultimate late '90s streetwear energy by styling these Platform Sneakers — White Chunky Sole with baggy…
+  F4 model busy once (503 injected), then recovers: status 200, size US 8, 1 results, card=True, 46434.0 ms
+```
+
+*Did it help?* Yes, for the failure it was aimed at. A single 503 now costs
+the user 2 seconds instead of their fit card: F4 is 1/1 in all three runs. The
+five criteria didn't move because they were all already MET. The return of
+"numeric-size query ends in a fit card" to 4/4 in every run is **not** proof
+of the fix: no real 503 happened during the after run, so that row says only
+that Google wasn't busy. F4 is the evidence. *The trade:* a request that would
+have failed fast after a 503 now waits up to 2 + 4 + 8 + 10 = 24 s before
+giving up. F4's own durations (38–46 s) are mostly the per-minute limiter,
+not the retry: the 503 wait was 2 s each time.
 
 **What's Still Broken**
 
-⟨pending⟩
+No criterion is missed, so the honest part is which targets were too easy:
+- **Criterion 4 was set too low.** "At least 1 of 2" would pass even if my
+  change broke one of the two original queries. It was 2/2 in all six runs.
+  I'd tighten it to **2 of 2 in every run**, across more original queries
+  (the unit 3 and unit 4 scenarios too).
+- **Criteria 1, 2, 3 and 5 test plain code**, so three trials only show the
+  code is right, not that it holds up under variation. I'd make them harder,
+  not stricter: more numeric forms (`sz 8`, `8.5 US`, `W 30 L 32`, `size 10W`,
+  which I never tested), and a query with both a waist and an inseam.
+
+Still broken in the system:
+- **Running out of 429 retries still crashes.** When the service keeps saying
+  "rate limited" for all 5 attempts, `generate.py` raises `RuntimeError`, not
+  `ModelUnavailable`. The agent doesn't catch that, so `serve.py` returns a
+  500. My fix made 503s safe, but the same gap is still there for 429s. I
+  didn't fix it because the unit allows one improvement, and I couldn't
+  trigger it in a test run without waiting out the real quota.
+- **Search spends ~1.2 s starting a process.** `mcp_client.call_tool` starts
+  `mcp_server.py` again for every call. Searching 40 listings takes almost
+  nothing, so almost all of that second is startup.
+- **No size conversion.** "W30" and "size M" don't know about each other, and
+  EU/UK shoe sizes aren't parsed. That was out of scope on purpose.
+
+*Why I stopped:* the unit asks for one improvement measured against the same
+criteria, and a second change would have mixed up the before/after
+comparison.
+
+*The one thing I'd do first with another unit:* make running out of 429
+retries end as `ModelUnavailable` instead of a 500, so every model failure
+gets the same user-facing message. It is now the only path I know of where a
+user gets a crash instead of a sentence, and it shows up exactly when the
+service is under the most load.
 
 **How I Used AI**
 
