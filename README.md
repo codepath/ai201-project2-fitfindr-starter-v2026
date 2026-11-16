@@ -591,8 +591,28 @@ Every request to `serve.py::ask` writes one JSON line to `logs/runs.jsonl`
 
 Read it back with `python runlog.py 12`.
 
-⟨TODO: paste at least 10 entries from `logs/runs.jsonl` here, including at
-least one failed run (the F1/F2 400s and the F3 model-down record count).⟩
+Ten consecutive records from the before run (trial 1: S1–S5, R1–R2, F1–F3),
+followed by the real failure from trial 3. Copied from `logs/runs.jsonl`
+(committed); only `fit_card` is cut at 140 characters here to keep it readable.
+Failed runs among them: two rejected inputs (status 400, `outcome: rejected`),
+the injected model outage (`outcome: agent_error`), and the real 503.
+
+Over the whole before session the log holds 40 records: 27 `fit_card`,
+3 `empty_search`, 4 `agent_error`, 6 `rejected`, 0 `crash`.
+
+```json
+{"ts": "2026-11-16T04:59:24.441+00:00", "request_id": "f5aa848e", "status": 200, "outcome": "fit_card", "query": "platform sneakers size 8", "parsed": {"description": "platform sneakers", "size": "US 8", "max_price": null}, "size_kind": "shoe", "n_results": 1, "result_sizes": ["US 8"], "selected": {"id": "lst_019", "title": "Platform Sneakers — White Chunky Sole", "size": "US 8", "price": 48.0}, "fit_card": "Level up your late 90s streetwear casual look with these Platform Sneakers — White Chunky Sole, currently listed on poshmark for $48. Paired…", "timings_ms": {"parse": 0.3, "search_listings": 2480.0, "suggest_outfit": 3346.8, "create_fit_card": 763.6}, "error": null, "duration_ms": 6606.6, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 1184, "output_tokens": 437, "total_tokens": 1621}
+{"ts": "2026-11-16T04:59:31.079+00:00", "request_id": "ba1fb3ea", "status": 200, "outcome": "fit_card", "query": "chelsea boots size 8.5", "parsed": {"description": "chelsea boots", "size": "US 8.5", "max_price": null}, "size_kind": "shoe", "n_results": 1, "result_sizes": ["US 8.5"], "selected": {"id": "lst_028", "title": "Suede Chelsea Boots — Tan", "size": "US 8.5", "price": 44.0}, "fit_card": "Pairing a crisp white tank, wide-leg khaki trousers, and a black denim jacket creates the ultimate casual minimalist earth-tone vibe for eve…", "timings_ms": {"parse": 0.0, "search_listings": 1013.9, "suggest_outfit": 1240.4, "create_fit_card": 795.8}, "error": null, "duration_ms": 3076.7, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 985, "output_tokens": 250, "total_tokens": 1235}
+{"ts": "2026-11-16T04:59:34.188+00:00", "request_id": "b8109d36", "status": 200, "outcome": "fit_card", "query": "high-waisted denim shorts W27", "parsed": {"description": "high-waisted denim shorts", "size": "W27", "max_price": null}, "size_kind": "waist", "n_results": 1, "result_sizes": ["W27"], "selected": {"id": "lst_016", "title": "High-Waisted Denim Shorts — Cutoff", "size": "W27", "price": 24.0}, "fit_card": "Channel an effortless grunge-meets-summer vibe by pairing these High-Waisted Denim Shorts — Cutoff with a vintage black jacket and chunky co…", "timings_ms": {"parse": 0.0, "search_listings": 960.9, "suggest_outfit": 1378.2, "create_fit_card": 1231.2}, "error": null, "duration_ms": 3574.1, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 1116, "output_tokens": 378, "total_tokens": 1494}
+{"ts": "2026-11-16T04:59:37.786+00:00", "request_id": "506e06fb", "status": 200, "outcome": "fit_card", "query": "straight leg black jeans waist 28", "parsed": {"description": "straight leg black jeans", "size": "W28", "max_price": null}, "size_kind": "waist", "n_results": 2, "result_sizes": ["W28", "W28"], "selected": {"id": "lst_037", "title": "Straight Leg Black Jeans — Faded", "size": "W28", "price": 30.0}, "fit_card": "Score these Straight Leg Black Jeans — Faded for just $30.0 on thredUp! They are perfect for building a sleek, monochrome edge look with a b…", "timings_ms": {"parse": 0.0, "search_listings": 1473.8, "suggest_outfit": 1048.7, "create_fit_card": 724.7}, "error": null, "duration_ms": 3259.0, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 1023, "output_tokens": 283, "total_tokens": 1306}
+{"ts": "2026-11-16T04:59:41.057+00:00", "request_id": "c56733d9", "status": 200, "outcome": "empty_search", "query": "canvas sneakers size 12", "parsed": {"description": "canvas sneakers", "size": "US 12", "max_price": null}, "size_kind": "shoe", "n_results": 0, "result_sizes": [], "selected": null, "fit_card": null, "timings_ms": {"parse": 0.0, "search_listings": 1405.9}, "error": "No listings matched your search. Nothing is listed in size US 12, so try a different size or remove the size. Try changing the description, removing the size filter, or increasing the maximum price.", "duration_ms": 1408.4, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+{"ts": "2026-11-16T04:59:42.474+00:00", "request_id": "649099da", "status": 200, "outcome": "fit_card", "query": "vintage graphic tee under $30, size M", "parsed": {"description": "vintage graphic tee", "size": "M", "max_price": 30.0}, "size_kind": "letter", "n_results": 10, "result_sizes": ["S/M", "S/M", "M", "One Size (adjustable)", "M", "M", "M", "M", "One Size", "M"], "selected": {"id": "lst_002", "title": "Y2K Baby Tee — Butterfly Print", "size": "S/M", "price": 18.0}, "fit_card": "Embrace early 2000s nostalgia with this Y2K Baby Tee — Butterfly Print, listed on depop for just $18.0! It's perfect for styling into classi…", "timings_ms": {"parse": 0.0, "search_listings": 896.5, "suggest_outfit": 1187.6, "create_fit_card": 876.9}, "error": null, "duration_ms": 2963.1, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 1058, "output_tokens": 336, "total_tokens": 1394}
+{"ts": "2026-11-16T04:59:45.449+00:00", "request_id": "7b88cf28", "status": 200, "outcome": "fit_card", "query": "vintage jacket under $25", "parsed": {"description": "vintage jacket", "size": null, "max_price": 25.0}, "size_kind": null, "n_results": 10, "result_sizes": ["S/M", "XL (oversized)", "L", "XL (fits oversized)", "One Size (adjustable)", "W27", "M", "M", "XL", "M"], "selected": {"id": "lst_002", "title": "Y2K Baby Tee — Butterfly Print", "size": "S/M", "price": 18.0}, "fit_card": "Channel your inner 2000s icon with this Y2K Streetwear Casual look, featuring the **Y2K Baby Tee — Butterfly Print** paired with baggy dark-…", "timings_ms": {"parse": 0.0, "search_listings": 881.9, "suggest_outfit": 1051.2, "create_fit_card": 717.2}, "error": null, "duration_ms": 2652.8, "model_calls": 2, "cache_hits": 0, "prompt_tokens": 996, "output_tokens": 266, "total_tokens": 1262}
+{"ts": "2026-11-16T04:59:48.138+00:00", "request_id": "064187b2", "status": 400, "outcome": "rejected", "query": "   ", "parsed": null, "size_kind": null, "n_results": 0, "result_sizes": [], "selected": null, "fit_card": null, "timings_ms": {}, "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}", "duration_ms": 0.1, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+{"ts": "2026-11-16T04:59:48.160+00:00", "request_id": "705a1162", "status": 400, "outcome": "rejected", "query": "query=sneakers", "parsed": null, "size_kind": null, "n_results": 0, "result_sizes": [], "selected": null, "fit_card": null, "timings_ms": {}, "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}", "duration_ms": 0.1, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+{"ts": "2026-11-16T04:59:48.170+00:00", "request_id": "7ae40ea6", "status": 200, "outcome": "agent_error", "query": "platform sneakers size 8", "parsed": {"description": "platform sneakers", "size": "US 8", "max_price": null}, "size_kind": "shoe", "n_results": 1, "result_sizes": ["US 8"], "selected": {"id": "lst_019", "title": "Platform Sneakers — White Chunky Sole", "size": "US 8", "price": 48.0}, "fit_card": null, "timings_ms": {"parse": 0.0, "search_listings": 863.9}, "error": "The search worked, but the outfit model couldn't be reached, so no outfit or fit card was made. Injected for testing: the model API is unreachable. Best match meanwhile: Platform Sneakers — White Chunky Sole ($48.0, poshmark).", "duration_ms": 865.8, "model_calls": 0, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+{"ts": "2026-11-16T05:01:25.668+00:00", "request_id": "26fb8f24", "status": 200, "outcome": "agent_error", "query": "high-waisted denim shorts W27", "parsed": {"description": "high-waisted denim shorts", "size": "W27", "max_price": null}, "size_kind": "waist", "n_results": 1, "result_sizes": ["W27"], "selected": {"id": "lst_016", "title": "High-Waisted Denim Shorts — Cutoff", "size": "W27", "price": 24.0}, "fit_card": null, "timings_ms": {"parse": 0.0, "search_listings": 877.3}, "error": "The search worked, but the outfit model couldn't be reached, so no outfit or fit card was made. Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}} Best match meanwhile: High-Waisted Denim Shorts — Cutoff ($24.0, poshmark).", "duration_ms": 36921.5, "model_calls": 1, "cache_hits": 0, "prompt_tokens": 0, "output_tokens": 0, "total_tokens": 0}
+```
 
 **What It Costs**
 
@@ -736,11 +756,97 @@ when a test sends ~20 requests a minute.
 
 **The Improvement**
 
-⟨after run pending⟩
+*What I changed:* `generate.py::generate` now treats a 503 "UNAVAILABLE /
+high demand" error as temporary and retries it with a short backoff (2 s,
+4 s, 8 s, capped at 10 s, up to `MAX_RETRIES` = 5 attempts). Only when every
+attempt fails does it raise `ModelUnavailable`. A bad key or any other error
+still fails on the first attempt, as before.
+
+*Why:* it follows the diagnosis above. The one run that failed in the before
+set (run 3, S3) failed because a 503 was treated like a dead key.
+
+*How I measured it:* a real 503 is random, so re-running the same five
+criteria can't show whether the fix helped. Google just might not be busy.
+So I added scenario **F4** to `capstone_eval.py`: the model API answers
+`503 UNAVAILABLE ... high demand` on the first call and then behaves normally
+(the client is wrapped in `run_scenario`; everything else is the real API).
+F4 is new in the after run, so it has no before column. Without the fix it
+would have ended exactly like the real S3 failure. The next step after the
+503 is `raise ModelUnavailable`, and F3 shows that path in every run.
+
+Run with `python capstone_eval.py --label after`. Full output:
+`results/capstone_after_2026-11-16_0009.md` and `.json`.
+
+| Criterion | Target | Before 1 | Before 2 | Before 3 | After 1 | After 2 | After 3 | Before → After |
+|---|---|---|---|---|---|---|---|---|
+| 1. Numeric sizes parsed right | 5 of 5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | MET → MET |
+| 2. Returned listings match size | 4 of 4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | 4/4 | MET → MET |
+| 3. Unstocked size stops, names it | 1 of 1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | 1/1 | MET → MET |
+| 4. Original queries still work | ≥ 1 of 2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | MET → MET |
+| 5. Malformed request → 400 | 2 of 2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | 2/2 | MET → MET |
+| *F4. Model busy once → still a fit card* | 1 of 1 | — | — | — | 1/1 | 1/1 | 1/1 | new |
+| *Numeric-size query ends in a fit card* | — | 4/4 | 4/4 | 3/4 | 4/4 | 4/4 | 4/4 | |
+| *Every request logged* | — | 10/10 | 10/10 | 10/10 | 11/11 | 11/11 | 11/11 | |
+| *Runs under 10 s (S1–S4, R1–R2)* | — | 6/6 | 5/6 | 5/6 | 6/6 | 6/6 | 6/6 | |
+
+Real output from after run 1, F4 (`capstone_eval.py::run_scenario` →
+`serve.py::ask` → `agent.py::run_agent` → `generate.py::generate`):
+```
+[40] select_item
+      out: Platform Sneakers — White Chunky Sole ($48.0, poshmark)
+  [busy] the model service is overloaded (503). Waiting 2s and trying again (attempt 1 of 5).
+[41] suggest_outfit
+      out: Here are two practical outfit ideas incorporating the new **Platform Sneakers** and pieces from your wardrobe:…
+  [rate limit] service pushed back. Waiting 41s (attempt 1 of 5). This is the limiter doing its job, not a bug.
+[42] create_fit_card
+      out: Channel ultimate late '90s streetwear energy by styling these Platform Sneakers — White Chunky Sole with baggy…
+  F4 model busy once (503 injected), then recovers: status 200, size US 8, 1 results, card=True, 46434.0 ms
+```
+
+*Did it help?* Yes, for the failure it was aimed at. A single 503 now costs
+the user 2 seconds instead of their fit card: F4 is 1/1 in all three runs. The
+five criteria didn't move because they were all already MET. The return of
+"numeric-size query ends in a fit card" to 4/4 in every run is **not** proof
+of the fix: no real 503 happened during the after run, so that row says only
+that Google wasn't busy. F4 is the evidence. *The trade:* a request that would
+have failed fast after a 503 now waits up to 2 + 4 + 8 + 10 = 24 s before
+giving up. F4's own durations (38–46 s) are mostly the per-minute limiter,
+not the retry: the 503 wait was 2 s each time.
 
 **What's Still Broken**
 
-⟨pending⟩
+No criterion is missed, so the honest part is which targets were too easy:
+- **Criterion 4 was set too low.** "At least 1 of 2" would pass even if my
+  change broke one of the two original queries. It was 2/2 in all six runs.
+  I'd tighten it to **2 of 2 in every run**, across more original queries
+  (the unit 3 and unit 4 scenarios too).
+- **Criteria 1, 2, 3 and 5 test plain code**, so three trials only show the
+  code is right, not that it holds up under variation. I'd make them harder,
+  not stricter: more numeric forms (`sz 8`, `8.5 US`, `W 30 L 32`, `size 10W`,
+  which I never tested), and a query with both a waist and an inseam.
+
+Still broken in the system:
+- **Running out of 429 retries still crashes.** When the service keeps saying
+  "rate limited" for all 5 attempts, `generate.py` raises `RuntimeError`, not
+  `ModelUnavailable`. The agent doesn't catch that, so `serve.py` returns a
+  500. My fix made 503s safe, but the same gap is still there for 429s. I
+  didn't fix it because the unit allows one improvement, and I couldn't
+  trigger it in a test run without waiting out the real quota.
+- **Search spends ~1.2 s starting a process.** `mcp_client.call_tool` starts
+  `mcp_server.py` again for every call. Searching 40 listings takes almost
+  nothing, so almost all of that second is startup.
+- **No size conversion.** "W30" and "size M" don't know about each other, and
+  EU/UK shoe sizes aren't parsed. That was out of scope on purpose.
+
+*Why I stopped:* the unit asks for one improvement measured against the same
+criteria, and a second change would have mixed up the before/after
+comparison.
+
+*The one thing I'd do first with another unit:* make running out of 429
+retries end as `ModelUnavailable` instead of a 500, so every model failure
+gets the same user-facing message. It is now the only path I know of where a
+user gets a crash instead of a sentence, and it shows up exactly when the
+service is under the most load.
 
 **How I Used AI**
 
