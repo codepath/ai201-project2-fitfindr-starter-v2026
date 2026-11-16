@@ -1,0 +1,393 @@
+{
+  "query": "platform sneakers size 8",
+  "runs": 10,
+  "successful": 10,
+  "mean_total_tokens": 1391.9,
+  "mean_prompt_tokens": 1067.7,
+  "mean_output_tokens": 324.2,
+  "min_total_tokens": 1183,
+  "max_total_tokens": 1693,
+  "mean_duration_ms": 7189.2,
+  "median_duration_ms": 3459.1,
+  "mean_stage_ms": {
+    "parse": 0.0,
+    "search_listings": 1155.0,
+    "suggest_outfit": 1437.2,
+    "create_fit_card": 4592.3
+  },
+  "model_calls_per_run": [
+    2
+  ],
+  "records": [
+    {
+      "ts": "2026-11-16T05:02:30.145+00:00",
+      "request_id": "cbd7f460",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel ultimate Y2K street style by pairing these Platform Sneakers — White Chunky Sole with a fitted ribbed tank and baggy dark-wash jeans. This sporty, nostalgic look is effortless for everyday wear and currently listed on poshmark for just $48.0!",
+      "timings_ms": {
+        "parse": 0.2,
+        "search_listings": 1785.0,
+        "suggest_outfit": 2705.4,
+        "create_fit_card": 790.7
+      },
+      "error": null,
+      "duration_ms": 5283.3,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1052,
+      "output_tokens": 305,
+      "total_tokens": 1357
+    },
+    {
+      "ts": "2026-11-16T05:02:35.442+00:00",
+      "request_id": "6e5d6c4a",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel effortless late-90s skater energy with this Y2K streetwear casual look, featuring baggy dark-wash jeans and a cropped black zip hoodie. Ground the fit with the Platform Sneakers — White Chunky Sole, available now on poshmark for just $48.0!",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 1252.4,
+        "suggest_outfit": 1204.8,
+        "create_fit_card": 1299.6
+      },
+      "error": null,
+      "duration_ms": 3759.1,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1009,
+      "output_tokens": 266,
+      "total_tokens": 1275
+    },
+    {
+      "ts": "2026-11-16T05:02:39.211+00:00",
+      "request_id": "ff7e70d6",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Score these late-90s streetwear casual vibes with my Platform Sneakers — White Chunky Sole, listed right now on Poshmark for $48. Paired with baggy dark-wash jeans, a cropped zip hoodie, and a crossbody bag, they bring that ultimate Y2K chunky-sole silhouette to your everyday wardrobe.",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 1721.4,
+        "suggest_outfit": 1059.0,
+        "create_fit_card": 738.9
+      },
+      "error": null,
+      "duration_ms": 3530.7,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1034,
+      "output_tokens": 301,
+      "total_tokens": 1335
+    },
+    {
+      "ts": "2026-11-16T05:02:42.753+00:00",
+      "request_id": "ad814871",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel that effortless off-duty model aesthetic by pairing these Platform Sneakers — White Chunky Sole with wide-leg khaki trousers and a sleek white tank. They bring the ultimate Y2K street style energy to any casual look. Grab them on poshmark right now for just $48.0!",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 923.8,
+        "suggest_outfit": 960.0,
+        "create_fit_card": 1272.1
+      },
+      "error": null,
+      "duration_ms": 3157.7,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1043,
+      "output_tokens": 303,
+      "total_tokens": 1346
+    },
+    {
+      "ts": "2026-11-16T05:02:45.922+00:00",
+      "request_id": "52e110bf",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Nail that late '90s streetwear energy by pairing these Platform Sneakers — White Chunky Sole with baggy dark-wash jeans and a cropped zip hoodie. You can snag them on poshmark right now for just $48.0!",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 967.7,
+        "suggest_outfit": 1115.3,
+        "create_fit_card": 651.1
+      },
+      "error": null,
+      "duration_ms": 2742.1,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1013,
+      "output_tokens": 262,
+      "total_tokens": 1275
+    },
+    {
+      "ts": "2026-11-16T05:02:48.676+00:00",
+      "request_id": "c1e5e5ac",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Scored these effortless late-90s streetwear vibes with the Platform Sneakers — White Chunky Sole for just $48.0 on poshmark! They totally nail that chunky-silhouette look when paired with baggy denim and a cropped hoodie.",
+      "timings_ms": {
+        "parse": 0.1,
+        "search_listings": 954.1,
+        "suggest_outfit": 1431.2,
+        "create_fit_card": 811.6
+      },
+      "error": null,
+      "duration_ms": 3202.5,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1115,
+      "output_tokens": 364,
+      "total_tokens": 1479
+    },
+    {
+      "ts": "2026-11-16T05:02:51.894+00:00",
+      "request_id": "5e1a7fdb",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel major late '90s streetwear energy with these retro Platform Sneakers — White Chunky Sole, styled with baggy dark-wash denim and a fitted ribbed tank. Grab this versatile footwear on poshmark for just $48.0 to effortlessly complete your casual, chunky-sole looks.",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 1197.3,
+        "suggest_outfit": 1487.7,
+        "create_fit_card": 685.7
+      },
+      "error": null,
+      "duration_ms": 3372.9,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1163,
+      "output_tokens": 421,
+      "total_tokens": 1584
+    },
+    {
+      "ts": "2026-11-16T05:02:55.276+00:00",
+      "request_id": "84a34f12",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Lean into late '90s streetwear energy by styling these Platform Sneakers — White Chunky Sole with a baggy dark-wash denim and cropped zip hoodie combination. Grab this Y2K-inspired staple for just $48.0 over on poshmark to effortlessly elevate your everyday errand looks.",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 902.3,
+        "suggest_outfit": 1797.4,
+        "create_fit_card": 36102.0
+      },
+      "error": null,
+      "duration_ms": 38804.2,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1217,
+      "output_tokens": 476,
+      "total_tokens": 1693
+    },
+    {
+      "ts": "2026-11-16T05:03:34.092+00:00",
+      "request_id": "fb508f6f",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel major Y2K streetwear energy with these Platform Sneakers — White Chunky Sole, styled with baggy denim and a cropped hoodie for the ultimate casual throwback look. Grab them on poshmark right now for just $48.00!",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 973.3,
+        "suggest_outfit": 1183.8,
+        "create_fit_card": 1222.1
+      },
+      "error": null,
+      "duration_ms": 3387.4,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 1072,
+      "output_tokens": 320,
+      "total_tokens": 1392
+    },
+    {
+      "ts": "2026-11-16T05:03:37.487+00:00",
+      "request_id": "2814fbbf",
+      "status": 200,
+      "outcome": "fit_card",
+      "query": "platform sneakers size 8",
+      "parsed": {
+        "description": "platform sneakers",
+        "size": "US 8",
+        "max_price": null
+      },
+      "size_kind": "shoe",
+      "n_results": 1,
+      "result_sizes": [
+        "US 8"
+      ],
+      "selected": {
+        "id": "lst_019",
+        "title": "Platform Sneakers — White Chunky Sole",
+        "size": "US 8",
+        "price": 48.0
+      },
+      "fit_card": "Channel ultimate Y2K streetwear casual energy by styling these Platform Sneakers — White Chunky Sole with baggy dark-wash jeans, a white ribbed tank, and a cropped zip hoodie. You can snag them on poshmark right now for just $48.0 to complete your effortless late '90s-inspired rotation!",
+      "timings_ms": {
+        "parse": 0.0,
+        "search_listings": 872.3,
+        "suggest_outfit": 1427.9,
+        "create_fit_card": 2349.2
+      },
+      "error": null,
+      "duration_ms": 4651.7,
+      "model_calls": 2,
+      "cache_hits": 0,
+      "prompt_tokens": 959,
+      "output_tokens": 224,
+      "total_tokens": 1183
+    }
+  ]
+}
