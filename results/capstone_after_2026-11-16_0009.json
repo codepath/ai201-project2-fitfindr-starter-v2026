@@ -1,0 +1,1313 @@
+[
+  [
+    {
+      "scenario": {
+        "id": "S1",
+        "group": "extension",
+        "name": "shoe size, whole",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8"
+      },
+      "measured": {
+        "id": "S1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 5149.6,
+        "timings_ms": {
+          "parse": 0.2,
+          "search_listings": 1498.2,
+          "suggest_outfit": 2576.6,
+          "create_fit_card": 1073.1
+        },
+        "total_tokens": 1271,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Serve up some late-90s energy with these Platform Sneakers — White Chunky Sole, available now on poshmark for $48. Pair them with a baggy dark wash denim and a black cropped zip hoodie for the ultimate Y2K streetwear casual look. It's an effortlessly cool, everyday outfit formula you'll reach for on repeat!"
+      }
+    },
+    {
+      "scenario": {
+        "id": "S2",
+        "group": "extension",
+        "name": "shoe size, half",
+        "query": "chelsea boots size 8.5",
+        "expect_size": "US 8.5"
+      },
+      "measured": {
+        "id": "S2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8.5",
+        "size_kind": "shoe",
+        "description": "chelsea boots",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8.5"
+        ],
+        "selected": "Suede Chelsea Boots — Tan",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3645.2,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 1114.9,
+          "suggest_outfit": 1213.7,
+          "create_fit_card": 1309.8
+        },
+        "total_tokens": 1351,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Snag these Suede Chelsea Boots — Tan on Poshmark for just $44 to instantly elevate your wardrobe. They are the star of this effortless casual minimalist earth-tone look, paired with wide-leg khakis, a crisp white tank, and a vintage black denim jacket. It's a relaxed, cohesive outfit with a cool structural edge that's perfect for everyday errands or casual meetups."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S3",
+        "group": "extension",
+        "name": "waist, W-form",
+        "query": "high-waisted denim shorts W27",
+        "expect_size": "W27"
+      },
+      "measured": {
+        "id": "S3",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W27",
+        "size_kind": "waist",
+        "description": "high-waisted denim shorts",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W27"
+        ],
+        "selected": "High-Waisted Denim Shorts — Cutoff",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2649.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 794.4,
+          "suggest_outfit": 1113.5,
+          "create_fit_card": 738.4
+        },
+        "total_tokens": 1247,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel that effortless casual streetwear summer energy by pairing your new High-Waisted Denim Shorts — Cutoff with a tucked-in ribbed tank and chunky sneakers. You can easily score these on poshmark for just 24.0, making them a total warm-weather staple. Toss on an oversized grey crewneck and a black crossbody bag to complete the ultimate comfy, proportion-play look for breezy days."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S4",
+        "group": "extension",
+        "name": "waist, word form",
+        "query": "straight leg black jeans waist 28",
+        "expect_size": "W28"
+      },
+      "measured": {
+        "id": "S4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W28",
+        "size_kind": "waist",
+        "description": "straight leg black jeans",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 2,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W28",
+          "W28"
+        ],
+        "selected": "Straight Leg Black Jeans — Faded",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 4104.9,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 864.4,
+          "suggest_outfit": 1962.4,
+          "create_fit_card": 1271.7
+        },
+        "total_tokens": 1514,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Score these Straight Leg Black Jeans — Faded for just $30.0 on thredUp to nail that cozy streetwear aesthetic. I love styling them with an oversized grey crewneck and chunky white sneakers for the ultimate relaxed, everyday vibe."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S5",
+        "group": "extension",
+        "name": "numeric size nobody stocks",
+        "query": "canvas sneakers size 12",
+        "expect_size": "US 12",
+        "expect_empty": true
+      },
+      "measured": {
+        "id": "S5",
+        "status": 200,
+        "outcome": "empty_search",
+        "parsed_size": "US 12",
+        "size_kind": "shoe",
+        "description": "canvas sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "No listings matched your search. Nothing is listed in size US 12, so try a different size or remove the size. Try changing the description, removing the size filter, or increasing the maximum price.",
+        "error_names_size": true,
+        "duration_ms": 880.6,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 879.1
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "R1",
+        "group": "regression",
+        "name": "letter size + price (unit 3 query)",
+        "query": "vintage graphic tee under $30, size M",
+        "expect_size": "M"
+      },
+      "measured": {
+        "id": "R1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "M",
+        "size_kind": "letter",
+        "description": "vintage graphic tee",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 10,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "S/M",
+          "S/M",
+          "M",
+          "One Size (adjustable)",
+          "M",
+          "M",
+          "M",
+          "M",
+          "One Size",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2611.3,
+        "timings_ms": {
+          "parse": 0.1,
+          "search_listings": 805.6,
+          "suggest_outfit": 1099.1,
+          "create_fit_card": 692.0
+        },
+        "total_tokens": 1259,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel ultimate early 2000s proportion play by pairing the Y2K Baby Tee — Butterfly Print with baggy dark-wash jeans and chunky white sneakers for a nostalgic streetwear fit. Grab this fitted cropped tee right now on depop for just $18.0 to complete your effortless everyday look."
+      }
+    },
+    {
+      "scenario": {
+        "id": "R2",
+        "group": "regression",
+        "name": "no size at all",
+        "query": "vintage jacket under $25",
+        "expect_size": null
+      },
+      "measured": {
+        "id": "R2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "vintage jacket",
+        "size_parsed_right": true,
+        "size_text_left_in_description": null,
+        "n_results": 10,
+        "all_results_match_size": null,
+        "result_sizes": [
+          "S/M",
+          "XL (oversized)",
+          "L",
+          "XL (fits oversized)",
+          "One Size (adjustable)",
+          "W27",
+          "M",
+          "M",
+          "XL",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2912.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 793.7,
+          "suggest_outfit": 1092.4,
+          "create_fit_card": 1023.4
+        },
+        "total_tokens": 1249,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel your inner early-2000s icon by pairing this Y2K Baby Tee — Butterfly Print with baggy dark-wash jeans and chunky white sneakers for an effortless everyday streetwear vibe. It's listed on depop right now for just $18.0!"
+      }
+    },
+    {
+      "scenario": {
+        "id": "F1",
+        "group": "failure",
+        "name": "empty query",
+        "body": {
+          "query": "   "
+        },
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F1",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F2",
+        "group": "failure",
+        "name": "body is not JSON",
+        "raw": "query=sneakers",
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F2",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F3",
+        "group": "failure",
+        "name": "model unreachable (fault injected)",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "model_down": true
+      },
+      "measured": {
+        "id": "F3",
+        "status": 200,
+        "outcome": "agent_error",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": false,
+        "error": "The search worked, but the outfit model couldn't be reached, so no outfit or fit card was made. Injected for testing: the model API is unreachable. Best match meanwhile: Platform Sneakers — White Chunky Sole ($48.0, poshmark).",
+        "error_names_size": null,
+        "duration_ms": 749.6,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 748.2
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "F4",
+        "group": "failure",
+        "name": "model busy once (503 injected), then recovers",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "busy_once": true
+      },
+      "measured": {
+        "id": "F4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 46434.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 708.0,
+          "suggest_outfit": 3422.7,
+          "create_fit_card": 42301.8
+        },
+        "total_tokens": 1639,
+        "model_calls": 4,
+        "logged": true,
+        "fit_card": "Channel ultimate late '90s streetwear energy by styling these Platform Sneakers — White Chunky Sole with baggy dark-wash jeans, a ribbed tank, and a cropped zip hoodie. I just listed this chunky white pair on Poshmark for $48, and they are ready to elevate your everyday casual rotation."
+      }
+    }
+  ],
+  [
+    {
+      "scenario": {
+        "id": "S1",
+        "group": "extension",
+        "name": "shoe size, whole",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8"
+      },
+      "measured": {
+        "id": "S1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2878.9,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 747.2,
+          "suggest_outfit": 1359.5,
+          "create_fit_card": 770.3
+        },
+        "total_tokens": 1581,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel that effortless late '90s streetwear vibe with baggy denim, a ribbed tank, and a cropped zip hoodie. These Platform Sneakers — White Chunky Sole tie the whole casual look together with their bold chunky silhouette. Grab them on poshmark for just $48.0 to instantly upgrade your everyday rotation."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S2",
+        "group": "extension",
+        "name": "shoe size, half",
+        "query": "chelsea boots size 8.5",
+        "expect_size": "US 8.5"
+      },
+      "measured": {
+        "id": "S2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8.5",
+        "size_kind": "shoe",
+        "description": "chelsea boots",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8.5"
+        ],
+        "selected": "Suede Chelsea Boots — Tan",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3513.7,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 750.0,
+          "suggest_outfit": 1351.1,
+          "create_fit_card": 1400.6
+        },
+        "total_tokens": 1593,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Give your everyday rotation an effortless earth-toned upgrade with these Suede Chelsea Boots — Tan, now listed on poshmark for $44.00. They add a warm, polished finish to laid-back baggy denim and cozy crewnecks, or tie together tonal khaki trousers and a black denim jacket for an elevated minimalist look. Grab them on the app before someone else does!"
+      }
+    },
+    {
+      "scenario": {
+        "id": "S3",
+        "group": "extension",
+        "name": "waist, W-form",
+        "query": "high-waisted denim shorts W27",
+        "expect_size": "W27"
+      },
+      "measured": {
+        "id": "S3",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W27",
+        "size_kind": "waist",
+        "description": "high-waisted denim shorts",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W27"
+        ],
+        "selected": "High-Waisted Denim Shorts — Cutoff",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3255.2,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 843.5,
+          "suggest_outfit": 1588.7,
+          "create_fit_card": 819.2
+        },
+        "total_tokens": 1286,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Scored these High-Waisted Denim Shorts — Cutoff for just $24.0 on poshmark! I'm styling them with a tucked-in ribbed tank and a vintage black denim jacket for the ultimate casual summer streetwear vibe. Chunky white sneakers and a crossbody bag tie the whole effortless, double-denim look together."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S4",
+        "group": "extension",
+        "name": "waist, word form",
+        "query": "straight leg black jeans waist 28",
+        "expect_size": "W28"
+      },
+      "measured": {
+        "id": "S4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W28",
+        "size_kind": "waist",
+        "description": "straight leg black jeans",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 2,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W28",
+          "W28"
+        ],
+        "selected": "Straight Leg Black Jeans — Faded",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3343.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 787.5,
+          "suggest_outfit": 1754.1,
+          "create_fit_card": 799.4
+        },
+        "total_tokens": 1525,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Score a cool downtown grunge look with the Straight Leg Black Jeans — Faded for just $30.0 on thredUp! This effortless piece pairs an oversized grey crewneck and chunky sneakers for casual coffee runs, or styles seamlessly with a vintage denim jacket and combat boots."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S5",
+        "group": "extension",
+        "name": "numeric size nobody stocks",
+        "query": "canvas sneakers size 12",
+        "expect_size": "US 12",
+        "expect_empty": true
+      },
+      "measured": {
+        "id": "S5",
+        "status": 200,
+        "outcome": "empty_search",
+        "parsed_size": "US 12",
+        "size_kind": "shoe",
+        "description": "canvas sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "No listings matched your search. Nothing is listed in size US 12, so try a different size or remove the size. Try changing the description, removing the size filter, or increasing the maximum price.",
+        "error_names_size": true,
+        "duration_ms": 768.6,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 765.4
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "R1",
+        "group": "regression",
+        "name": "letter size + price (unit 3 query)",
+        "query": "vintage graphic tee under $30, size M",
+        "expect_size": "M"
+      },
+      "measured": {
+        "id": "R1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "M",
+        "size_kind": "letter",
+        "description": "vintage graphic tee",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 10,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "S/M",
+          "S/M",
+          "M",
+          "One Size (adjustable)",
+          "M",
+          "M",
+          "M",
+          "M",
+          "One Size",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2907.2,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 705.9,
+          "suggest_outfit": 1597.3,
+          "create_fit_card": 602.7
+        },
+        "total_tokens": 1177,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel ultimate 2000s streetwear casual vibes by pairing this fitted crop top with relaxed dark-wash baggy jeans and chunky white sneakers. Grab the **Y2K Baby Tee — Butterfly Print** on depop right now for just $18.0 to effortlessly complete your everyday look."
+      }
+    },
+    {
+      "scenario": {
+        "id": "R2",
+        "group": "regression",
+        "name": "no size at all",
+        "query": "vintage jacket under $25",
+        "expect_size": null
+      },
+      "measured": {
+        "id": "R2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "vintage jacket",
+        "size_parsed_right": true,
+        "size_text_left_in_description": null,
+        "n_results": 10,
+        "all_results_match_size": null,
+        "result_sizes": [
+          "S/M",
+          "XL (oversized)",
+          "L",
+          "XL (fits oversized)",
+          "One Size (adjustable)",
+          "W27",
+          "M",
+          "M",
+          "XL",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2331.5,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 828.7,
+          "suggest_outfit": 794.3,
+          "create_fit_card": 706.1
+        },
+        "total_tokens": 1216,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel ultimate early 2000s streetwear vibes with this Y2K Baby Tee — Butterfly Print, featuring a cropped silhouette that pairs effortlessly with baggy dark-wash jeans and chunky white sneakers. Grab it on depop now for just $18.0 to complete your go-to casual everyday look!"
+      }
+    },
+    {
+      "scenario": {
+        "id": "F1",
+        "group": "failure",
+        "name": "empty query",
+        "body": {
+          "query": "   "
+        },
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F1",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F2",
+        "group": "failure",
+        "name": "body is not JSON",
+        "raw": "query=sneakers",
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F2",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F3",
+        "group": "failure",
+        "name": "model unreachable (fault injected)",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "model_down": true
+      },
+      "measured": {
+        "id": "F3",
+        "status": 200,
+        "outcome": "agent_error",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": false,
+        "error": "The search worked, but the outfit model couldn't be reached, so no outfit or fit card was made. Injected for testing: the model API is unreachable. Best match meanwhile: Platform Sneakers — White Chunky Sole ($48.0, poshmark).",
+        "error_names_size": null,
+        "duration_ms": 737.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 736.1
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "F4",
+        "group": "failure",
+        "name": "model busy once (503 injected), then recovers",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "busy_once": true
+      },
+      "measured": {
+        "id": "F4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 39968.7,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 700.0,
+          "suggest_outfit": 3133.9,
+          "create_fit_card": 36131.3
+        },
+        "total_tokens": 1399,
+        "model_calls": 3,
+        "logged": true,
+        "fit_card": "Channel ultimate Y2K streetwear energy or cozy minimal vibes with these sweet Platform Sneakers — White Chunky Sole. Grab them over on poshmark for just $48.0 to easily elevate your everyday baggy denim and oversized hoodie looks!"
+      }
+    }
+  ],
+  [
+    {
+      "scenario": {
+        "id": "S1",
+        "group": "extension",
+        "name": "shoe size, whole",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8"
+      },
+      "measured": {
+        "id": "S1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3180.7,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 746.6,
+          "suggest_outfit": 1351.5,
+          "create_fit_card": 1069.5
+        },
+        "total_tokens": 1350,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Grab these Platform Sneakers — White Chunky Sole on Poshmark for just $48 to instantly nail a late '90s Y2K streetwear vibe. They look amazing peeking out beneath baggy dark-wash jeans and a cropped zip hoodie for an effortless, on-the-go everyday fit."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S2",
+        "group": "extension",
+        "name": "shoe size, half",
+        "query": "chelsea boots size 8.5",
+        "expect_size": "US 8.5"
+      },
+      "measured": {
+        "id": "S2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8.5",
+        "size_kind": "shoe",
+        "description": "chelsea boots",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8.5"
+        ],
+        "selected": "Suede Chelsea Boots — Tan",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 2691.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 713.0,
+          "suggest_outfit": 1353.8,
+          "create_fit_card": 614.2
+        },
+        "total_tokens": 1273,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Scored these gorgeous Suede Chelsea Boots — Tan on Poshmark for just $44! They are the ultimate anchor for a casual minimalist earth-tone vibe, especially when paired with wide-leg khaki trousers and a structured vintage black denim jacket."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S3",
+        "group": "extension",
+        "name": "waist, W-form",
+        "query": "high-waisted denim shorts W27",
+        "expect_size": "W27"
+      },
+      "measured": {
+        "id": "S3",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W27",
+        "size_kind": "waist",
+        "description": "high-waisted denim shorts",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W27"
+        ],
+        "selected": "High-Waisted Denim Shorts — Cutoff",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3793.9,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 795.8,
+          "suggest_outfit": 1743.4,
+          "create_fit_card": 1251.8
+        },
+        "total_tokens": 1230,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel that casual streetwear summer vibe by pairing your new High-Waisted Denim Shorts — Cutoff with a ribbed white tank, a cropped zip hoodie, and fresh chunky sneakers. This effortless, sporty look is currently listed on poshmark for just $24.0, making it the ultimate warm-weather staple for your everyday wardrobe."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S4",
+        "group": "extension",
+        "name": "waist, word form",
+        "query": "straight leg black jeans waist 28",
+        "expect_size": "W28"
+      },
+      "measured": {
+        "id": "S4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "W28",
+        "size_kind": "waist",
+        "description": "straight leg black jeans",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 2,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "W28",
+          "W28"
+        ],
+        "selected": "Straight Leg Black Jeans — Faded",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3434.7,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 798.7,
+          "suggest_outfit": 1717.4,
+          "create_fit_card": 912.5
+        },
+        "total_tokens": 1499,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Score these Straight Leg Black Jeans — Faded for just $30.0 on thredUp to nail that laid-back streetwear aesthetic. They’re super easy to style with an oversized grey crewneck and chunky white sneakers for a cozy, everyday monochromatic fit."
+      }
+    },
+    {
+      "scenario": {
+        "id": "S5",
+        "group": "extension",
+        "name": "numeric size nobody stocks",
+        "query": "canvas sneakers size 12",
+        "expect_size": "US 12",
+        "expect_empty": true
+      },
+      "measured": {
+        "id": "S5",
+        "status": 200,
+        "outcome": "empty_search",
+        "parsed_size": "US 12",
+        "size_kind": "shoe",
+        "description": "canvas sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "No listings matched your search. Nothing is listed in size US 12, so try a different size or remove the size. Try changing the description, removing the size filter, or increasing the maximum price.",
+        "error_names_size": true,
+        "duration_ms": 825.0,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 818.4
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "R1",
+        "group": "regression",
+        "name": "letter size + price (unit 3 query)",
+        "query": "vintage graphic tee under $30, size M",
+        "expect_size": "M"
+      },
+      "measured": {
+        "id": "R1",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "M",
+        "size_kind": "letter",
+        "description": "vintage graphic tee",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 10,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "S/M",
+          "S/M",
+          "M",
+          "One Size (adjustable)",
+          "M",
+          "M",
+          "M",
+          "M",
+          "One Size",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3653.3,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 812.9,
+          "suggest_outfit": 1157.4,
+          "create_fit_card": 1675.9
+        },
+        "total_tokens": 1178,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Nostalgic early 2000s proportions come alive in this effortless Y2K Streetwear Casual look, blending fitted silhouettes with voluminous dark wash denim and chunky white sneakers. Grab this Y2K Baby Tee — Butterfly Print on depop for just $18.0 to easily nail that laid-back, everyday aesthetic."
+      }
+    },
+    {
+      "scenario": {
+        "id": "R2",
+        "group": "regression",
+        "name": "no size at all",
+        "query": "vintage jacket under $25",
+        "expect_size": null
+      },
+      "measured": {
+        "id": "R2",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "vintage jacket",
+        "size_parsed_right": true,
+        "size_text_left_in_description": null,
+        "n_results": 10,
+        "all_results_match_size": null,
+        "result_sizes": [
+          "S/M",
+          "XL (oversized)",
+          "L",
+          "XL (fits oversized)",
+          "One Size (adjustable)",
+          "W27",
+          "M",
+          "M",
+          "XL",
+          "M"
+        ],
+        "selected": "Y2K Baby Tee — Butterfly Print",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 3438.4,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 937.2,
+          "suggest_outfit": 1183.4,
+          "create_fit_card": 1306.1
+        },
+        "total_tokens": 1409,
+        "model_calls": 2,
+        "logged": true,
+        "fit_card": "Channel early 2000s streetwear by pairing the Y2K Baby Tee — Butterfly Print with baggy dark-wash jeans and chunky sneakers for the ultimate nostalgic proportion play. This playful, girly pastel graphic is now available on depop for just $18.0!"
+      }
+    },
+    {
+      "scenario": {
+        "id": "F1",
+        "group": "failure",
+        "name": "empty query",
+        "body": {
+          "query": "   "
+        },
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F1",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F2",
+        "group": "failure",
+        "name": "body is not JSON",
+        "raw": "query=sneakers",
+        "expect_status": 400
+      },
+      "measured": {
+        "id": "F2",
+        "status": 400,
+        "outcome": "rejected",
+        "parsed_size": null,
+        "size_kind": null,
+        "description": "",
+        "size_parsed_right": null,
+        "size_text_left_in_description": null,
+        "n_results": 0,
+        "all_results_match_size": null,
+        "result_sizes": [],
+        "selected": null,
+        "fit_card_made": false,
+        "error": "Send JSON with a 'query' field, e.g. {\"query\": \"vintage graphic tee under $30\"}",
+        "error_names_size": null,
+        "duration_ms": 0.1,
+        "timings_ms": {},
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null,
+        "status_as_expected": true
+      }
+    },
+    {
+      "scenario": {
+        "id": "F3",
+        "group": "failure",
+        "name": "model unreachable (fault injected)",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "model_down": true
+      },
+      "measured": {
+        "id": "F3",
+        "status": 200,
+        "outcome": "agent_error",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": false,
+        "error": "The search worked, but the outfit model couldn't be reached, so no outfit or fit card was made. Injected for testing: the model API is unreachable. Best match meanwhile: Platform Sneakers — White Chunky Sole ($48.0, poshmark).",
+        "error_names_size": null,
+        "duration_ms": 821.4,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 820.5
+        },
+        "total_tokens": 0,
+        "model_calls": 0,
+        "logged": true,
+        "fit_card": null
+      }
+    },
+    {
+      "scenario": {
+        "id": "F4",
+        "group": "failure",
+        "name": "model busy once (503 injected), then recovers",
+        "query": "platform sneakers size 8",
+        "expect_size": "US 8",
+        "busy_once": true
+      },
+      "measured": {
+        "id": "F4",
+        "status": 200,
+        "outcome": "fit_card",
+        "parsed_size": "US 8",
+        "size_kind": "shoe",
+        "description": "platform sneakers",
+        "size_parsed_right": true,
+        "size_text_left_in_description": false,
+        "n_results": 1,
+        "all_results_match_size": true,
+        "result_sizes": [
+          "US 8"
+        ],
+        "selected": "Platform Sneakers — White Chunky Sole",
+        "fit_card_made": true,
+        "error": null,
+        "error_names_size": null,
+        "duration_ms": 38171.5,
+        "timings_ms": {
+          "parse": 0.0,
+          "search_listings": 719.3,
+          "suggest_outfit": 3292.3,
+          "create_fit_card": 34154.4
+        },
+        "total_tokens": 1389,
+        "model_calls": 3,
+        "logged": true,
+        "fit_card": "Channel total late-90s streetwear energy with these retro-vibe kicks paired with baggy dark denim and a cropped zip hoodie. You can snag the Platform Sneakers — White Chunky Sole on poshmark right now for just 48.0 to complete your effortless Y2K rotation."
+      }
+    }
+  ]
+]
