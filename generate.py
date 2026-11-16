@@ -328,6 +328,29 @@ def generate(
                 or "resource" in message and "exhaust" in message
                 or "rate" in message and "limit" in message
             )
+            # CAPSTONE improvement: a 503 "UNAVAILABLE / high demand" is the
+            # service being briefly overloaded, not a bad key. Before this,
+            # it was raised as ModelUnavailable on the first try, so one busy
+            # second cost the user their fit card. Now it is retried with a
+            # short backoff, like a 429.
+            transient = (
+                "503" in message
+                or "unavailable" in message and ("demand" in message or "overload" in message)
+                or "overloaded" in message
+            )
+            if transient and not rate_limited:
+                if attempt + 1 >= config.MAX_RETRIES:
+                    raise ModelUnavailable(_explain(exc)) from exc
+                backoff = min(10.0, 2.0 ** (attempt + 1))
+                print(
+                    f"  [busy] the model service is overloaded (503). Waiting "
+                    f"{backoff:.0f}s and trying again (attempt {attempt + 1} of "
+                    f"{config.MAX_RETRIES}).",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                time.sleep(backoff)
+                continue
             if not rate_limited:
                 raise ModelUnavailable(_explain(exc)) from exc
             backoff = _retry_delay(exc, attempt)
