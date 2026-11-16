@@ -13,6 +13,7 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 import re
+import time
 import config
 import trace
 from tools import suggest_outfit, create_fit_card
@@ -45,7 +46,62 @@ def new_session(query: str, wardrobe: dict) -> dict:
         "outfit_suggestion": None,   # what suggest_outfit returned
         "fit_card": None,            # what create_fit_card returned
         "error": None,               # set when the run ended early
+        "size_kind": None,           # capstone: "letter", "shoe", "waist" or None
+        "timings_ms": {},            # capstone: how long each stage took
     }
+
+
+# ── query parsing (capstone extension: numeric sizes) ───────────────────────
+
+_LETTER_SIZE = re.compile(r"\b(?:size\s*)?(XXS|XS|S|M|L|XL|XXL)\b", re.IGNORECASE)
+
+# Waist sizes: "W27", "w 30", "waist 28", "28 waist", "28in waist".
+_WAIST_SIZE = [
+    re.compile(r"\bW\s?(\d{2})\b", re.IGNORECASE),
+    re.compile(r"\bwaist\s*(?:size\s*)?(\d{2})\b", re.IGNORECASE),
+    re.compile(r"\b(\d{2})\s*(?:in(?:ch(?:es)?)?\s*|\"\s*)?waist\b", re.IGNORECASE),
+]
+
+# Shoe sizes: "size 8", "size 8.5", "US 9", "us size 7", "size 8 1/2".
+_SHOE_SIZE = re.compile(
+    r"\b(?:US\s*(?:size\s*)?|size\s*)(\d{1,2})(?:(\.5)|\s+1/2)?(?![\d.$])",
+    re.IGNORECASE,
+)
+
+
+def _parse_size(query: str) -> tuple[str | None, str | None, str | None]:
+    """
+    Pull one size out of the query.
+
+    Returns (size, kind, matched_text):
+      size          the size in the same format the listings use
+                    ("W27", "US 8.5", "M"), or None
+      kind          "waist", "shoe", "letter", or None
+      matched_text  the exact text that was matched, so it can be removed
+                    from the description
+
+    Numeric patterns run before the letter pattern, so "size 8" is never read
+    as a missing letter size, and the 8 doesn't stay behind as a keyword.
+    """
+    for pattern in _WAIST_SIZE:
+        m = pattern.search(query)
+        if m:
+            return f"W{m.group(1)}", "waist", m.group(0)
+
+    m = _SHOE_SIZE.search(query)
+    if m:
+        half = ".5" if (m.group(2) or m.group(0).rstrip().endswith("1/2")) else ""
+        return f"US {int(m.group(1))}{half}", "shoe", m.group(0)
+
+    m = _LETTER_SIZE.search(query)
+    if m:
+        return m.group(1).upper(), "letter", m.group(0)
+
+    return None, None, None
+
+
+def _ms_since(t: float) -> float:
+    return round((time.perf_counter() - t) * 1000, 1)
 
 
 # ── planning loop ─────────────────────────────────────────────────────────────
@@ -108,13 +164,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    # Parse optional size, for example: "size M"
-    size_match = re.search(
-        r"\b(?:size\s*)?(XXS|XS|S|M|L|XL|XXL)\b",
-        query,
-        re.IGNORECASE,
-    )
+    t_start = time.perf_counter()
+
+    # Parse the query into description / size / max_price.
+    # Capstone extension: numeric sizes (shoe "size 8" / "US 8.5", waist
+    # "W27" / "waist 28") are parsed first; letter sizes are the original rule.
+    size, size_kind, size_text = _parse_size(query)
 
     # Parse optional maximum price, for example: "under $30"
     price_match = re.search(
@@ -122,18 +177,16 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         query,
         re.IGNORECASE,
     )
-
-    size = size_match.group(1).upper() if size_match else None
     max_price = float(price_match.group(1)) if price_match else None
 
     description = query
-
-    if size_match:
-        description = description.replace(size_match.group(0), "")
+    if size_text:
+        description = description.replace(size_text, " ")
     if price_match:
-        description = description.replace(price_match.group(0), "")
+        description = description.replace(price_match.group(0), " ")
 
     description = re.sub(r"\s+", " ", description).strip(" ,")
+    session["size_kind"] = size_kind
 
     session["parsed"] = {
         "description": description,
@@ -141,19 +194,28 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         "max_price": max_price,
     }
 
+    session["timings_ms"]["parse"] = _ms_since(t_start)
+
     trace.check_iterations(1)  # one pass: the loop never goes round again
     trace.step("parse_query", inputs=query, returned=str(session["parsed"]))
 
     try:
+        t = time.perf_counter()
         session["search_results"] = call_tool("search_listings", session["parsed"])
+        session["timings_ms"]["search_listings"] = _ms_since(t)
         trace.step("search_listings (via MCP)", inputs=str(session["parsed"]),
                    returned=session["search_results"])
 
         # The branch: stop immediately when no listing was found.
         if not session["search_results"]:
+            size_note = (
+                f" Nothing is listed in size {session['parsed']['size']}, so try a "
+                f"different size or remove the size."
+                if session["parsed"]["size"] else ""
+            )
             session["error"] = (
-                "No listings matched your search. Try changing the description, "
-                "removing the size filter, or increasing the maximum price."
+                "No listings matched your search." + size_note + " Try changing the "
+                "description, removing the size filter, or increasing the maximum price."
             )
             trace.step("branch", note="search empty, stopping before suggest_outfit")
             return session
@@ -162,19 +224,23 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         trace.step("select_item", returned=session["selected_item"],
                    note="first (best-scoring) result")
 
+        t = time.perf_counter()
         session["outfit_suggestion"] = suggest_outfit(
             session["selected_item"],
             session["wardrobe"],
         )
+        session["timings_ms"]["suggest_outfit"] = _ms_since(t)
         trace.step("suggest_outfit",
                    inputs=f"new_item={session['selected_item']['title']!r}, "
                           f"wardrobe={len(session['wardrobe'].get('items', []))} items",
                    returned=session["outfit_suggestion"])
 
+        t = time.perf_counter()
         session["fit_card"] = create_fit_card(
             session["outfit_suggestion"],
             session["selected_item"],
         )
+        session["timings_ms"]["create_fit_card"] = _ms_since(t)
         trace.step("create_fit_card",
                    inputs=f"outfit={len(session['outfit_suggestion'])} chars, "
                           f"new_item={session['selected_item']['title']!r}",
