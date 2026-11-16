@@ -59,6 +59,11 @@ SCENARIOS = [
      "expect_status": 400},
     {"id": "F3", "group": "failure", "name": "model unreachable (fault injected)",
      "query": "platform sneakers size 8", "expect_size": "US 8", "model_down": True},
+    # Added with the improvement (not in the before run): the model API answers
+    # 503 "high demand" once, then recovers. This is what happened for real to
+    # S3 in trial 3 of the before run.
+    {"id": "F4", "group": "failure", "name": "model busy once (503 injected), then recovers",
+     "query": "platform sneakers size 8", "expect_size": "US 8", "busy_once": True},
 ]
 
 COST_QUERY = "platform sneakers size 8"
@@ -75,7 +80,27 @@ def run_scenario(client, sc):
     import tools
     from generate import ModelUnavailable
 
+    import generate as gen
     original_generate = tools.generate
+    original_get_client = gen._get_client
+    if sc.get("busy_once"):
+        real_client = gen._get_client()
+        state = {"failed": False}
+
+        class _BusyOnceModels:
+            def generate_content(self, **kwargs):
+                if not state["failed"]:
+                    state["failed"] = True
+                    raise RuntimeError(
+                        "503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model "
+                        "is currently experiencing high demand. (injected for testing)', "
+                        "'status': 'UNAVAILABLE'}}")
+                return real_client.models.generate_content(**kwargs)
+
+        class _BusyOnceClient:
+            models = _BusyOnceModels()
+
+        gen._get_client = lambda: _BusyOnceClient()
     if sc.get("model_down"):
         def _down(*a, **k):
             raise ModelUnavailable("Injected for testing: the model API is unreachable.")
@@ -87,6 +112,7 @@ def run_scenario(client, sc):
             resp = client.post("/ask", json=sc.get("body") or {"query": sc["query"]})
     finally:
         tools.generate = original_generate
+        gen._get_client = original_get_client
 
     body = resp.get_json(silent=True) or {}
     rec = runlog.read(1)[-1] if runlog.read(1) else {}
@@ -187,6 +213,9 @@ def summary(all_trials):
          lambda sc, m: m["status"] == 200 and m["error"] and not m["fit_card_made"]
          and bool(m["selected"]) and m["selected"] in (m["error"] or ""),
          lambda sc: sc.get("model_down")),
+        ("Model busy once (503): still ends in a fit card (F4, after run only)",
+         lambda sc, m: m["status"] == 200 and m["fit_card_made"],
+         lambda sc: sc.get("busy_once")),
         ("Every request left a log record (all)",
          lambda sc, m: m["logged"], lambda sc: True),
         ("Runs under 10 s end to end (S1–S4, R1–R2)",
