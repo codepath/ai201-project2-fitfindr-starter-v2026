@@ -596,30 +596,153 @@ least one failed run (the F1/F2 400s and the F3 model-down record count).⟩
 
 **What It Costs**
 
-⟨TODO after `python capstone_eval.py --cost 10`: mean tokens per run
-(prompt + output), mean seconds per run, and the method below.⟩
+**Measured: 1,391.9 tokens per run on average (1,067.7 prompt + 324.2
+output), 2 model requests per run, median 3.46 s end to end.** Range over the
+ten runs: 1,183 to 1,693 tokens. All 10 runs succeeded.
 
-Method: `capstone_eval.py --cost 10` sends `platform sneakers size 8` ten
-times through `POST /ask` with the cache off. Each run's tokens are the
-difference in `generate.token_counts()` before and after that run, which is
-what the Gemini API reported in `usage_metadata`, not a number from the
-pricing page. Results land in `results/capstone_cost_<timestamp>.json`.
+Method: `python capstone_eval.py --cost 10` sent `platform sneakers size 8`
+ten times through `POST /ask` (`serve.py::ask`) with the cache off. Each run's
+tokens are the difference in `generate.token_counts()` before and after that
+run, which is what the Gemini API reported in `usage_metadata` for the two
+calls (`suggest_outfit` and `create_fit_card`), not a number from the pricing
+page. Raw numbers per run: `results/capstone_cost_2026-11-16_0002.json`.
 
-Hundred people a day: ⟨mean tokens⟩ × 100 = ⟨N⟩ tokens/day, ⟨2 × 100 = 200⟩
-model requests/day.
+The mean duration was 7.19 s, but that mean is pulled up by one run (run 8,
+38.8 s) that waited 35 s in `generate.py`'s own per-minute limiter
+(15 requests/minute). The median, 3.46 s, is the honest "one run" number.
+
+A hundred people a day, one query each:
+1,391.9 tokens × 100 = **139,190 tokens/day**, and 2 requests × 100 =
+**200 model requests/day**. On the free Gemini tier this course uses, that is
+$0. The limit that bites first is not money but the per-minute cap: 100 people
+spread over a day is far under 15 requests/minute, but 8 people arriving in the
+same minute (16 requests) would already make someone wait.
+
+**Latency breakdown (stretch)** — mean per stage over the same ten runs, from
+`timings_ms` in each log record: parse 0.0 ms · search_listings (via MCP)
+1,155 ms · suggest_outfit 1,437 ms · create_fit_card 4,592 ms. The
+create_fit_card mean includes run 8's 35 s limiter wait; without it the two
+model calls take about the same time. The surprise is search: matching 40
+listings in Python takes almost nothing, so almost all of its 1.2 s must be starting
+`mcp_server.py` as a new process for every call (`mcp_client.call_tool`).
 
 **Run Log and Verdicts**
 
-⟨TODO⟩
+Criteria are in `criteria.md` under "Capstone criteria", committed before any
+results (`add capstone criteria`, then `capstone first results (before)`).
+Run with `python capstone_eval.py --label before`; every request went through
+`serve.py::ask` and was logged by `runlog.py::write`. Full output:
+`results/capstone_before_2026-11-15_2359.md` and `.json`.
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Numeric sizes parsed to the right value (S1–S5) | 5 of 5 each run | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every returned listing matches the numeric size (S1–S4) | 4 of 4 each run | 4/4 | 4/4 | 4/4 | MET |
+| 3. Unstocked size stops early and names the size (S5) | 1 of 1 each run | 1/1 | 1/1 | 1/1 | MET |
+| 4. Original queries still parse and end in a fit card (R1–R2) | at least 1 of 2 each run | 2/2 | 2/2 | 2/2 | MET |
+| 5. Malformed requests get 400, not 500 (F1–F2) | 2 of 2 each run | 2/2 | 2/2 | 2/2 | MET |
+
+Measured alongside (not criteria): numeric-size query ends in a fit card
+4/4, 4/4, **3/4**; model-down request (F3) handled without a crash 1/1 in
+every run; every request left a log record 10/10 in every run; runs under
+10 s 6/6, **5/6**, **5/6**.
+
+Real output, from run 1 (`capstone_eval.py` → `serve.py::ask` →
+`agent.py::run_agent`, trace from `trace.py::step`):
+
+*Criterion 1 and 2* — parse and search for S2 (`agent.py::_parse_size`,
+`tools.py::search_listings` via MCP):
+```
+[6] parse_query
+      in:  chelsea boots size 8.5
+      out: {'description': 'chelsea boots', 'size': 'US 8.5', 'max_price': None}
+[7] search_listings (via MCP)
+      in:  {'description': 'chelsea boots', 'size': 'US 8.5', 'max_price': None}
+      out: 1 items: Suede Chelsea Boots — Tan
+```
+and S4, where the word form "waist 28" becomes `W28` and both returned
+listings are W28:
+```
+[16] parse_query
+      in:  straight leg black jeans waist 28
+      out: {'description': 'straight leg black jeans', 'size': 'W28', 'max_price': None}
+[17] search_listings (via MCP)
+      out: 2 items: Straight Leg Black Jeans — Faded, Corduroy Wide-Leg Pants — Rust
+```
+
+*Criterion 3* — S5 (`agent.py::run_agent`, the empty-search branch):
+```
+[21] parse_query
+      in:  canvas sneakers size 12
+      out: {'description': 'canvas sneakers', 'size': 'US 12', 'max_price': None}
+[22] search_listings (via MCP)
+      out: [] (empty)
+[23] branch
+      →    search empty, stopping before suggest_outfit
+  S5 numeric size nobody stocks: status 200, size US 12, 0 results, card=False, 1408.4 ms
+```
+
+*Criterion 4* — R1, the unit 3 query, still parsed as a letter size and
+finished with a fit card:
+```
+[24] parse_query
+      in:  vintage graphic tee under $30, size M
+      out: {'description': 'vintage graphic tee', 'size': 'M', 'max_price': 30.0}
+[28] create_fit_card
+      out: Embrace early 2000s nostalgia with this Y2K Baby Tee — Butterfly Print, listed on depop for just $18.0! It's p…
+  R1 letter size + price (unit 3 query): status 200, size M, 10 results, card=True, 2963.1 ms
+```
+
+*Criterion 5* — F1 and F2 (`serve.py::ask`, rejected before the agent runs):
+```
+  F1 empty query: status 400, size None, 0 results, card=False, 0.1 ms
+  F2 body is not JSON: status 400, size None, 0 results, card=False, 0.1 ms
+```
+
+**Diagnosis.** No criterion was missed, so there is no miss to diagnose. But
+I have to be honest about why. Criteria 1, 2, 3 and 5 test plain code (a
+regex, a set comparison, an `if not results`, a 400 check). Code like that
+gives the same answer every time, so once it was right in trial 1 it was
+always going to be right in trials 2 and 3. Three trials can't show variation
+there, only whether the code is right. **Criterion 4's target was set too
+low.** "At least 1 of 2" would have passed even if one of the two original
+queries had been broken by my change. It came out 2/2 every time, so I would
+tighten it to **2 of 2 in every run**, and add more original queries.
+
+**The failure that did happen was outside my five criteria.** In run 3, S3
+(`high-waisted denim shorts W27`) parsed and searched correctly but got no
+fit card:
+```
+[87] select_item
+      out: High-Waisted Denim Shorts — Cutoff ($24.0, poshmark)
+  [rate limit] 15 requests used this minute. Waiting 35s. This is normal.
+[88] error
+      →    ModelUnavailable: Couldn't reach the model: 503 UNAVAILABLE. {'error': {'code': 503, 'message': 'This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.', 'status': 'UNAVAILABLE'}}
+  S3 waist, W-form: status 200, size W27, 1 results, card=False, 36921.5 ms
+```
+*Stage:* the model call in `generate.py::generate`. *Mechanism:* the retry
+loop only retries when the error looks like a rate limit (429 / "resource
+exhausted" / "rate limit"). A 503 "high demand" is just as temporary (the
+message itself says "try again later"), but it fell into the
+`if not rate_limited: raise ModelUnavailable` branch on the **first**
+attempt. So one busy second at Google cost the user their fit card. The agent
+handled it correctly (status 200, a message naming the listing, no crash),
+but the run failed when it didn't need to.
+
+The two slow runs have a separate cause: run 2 S1 (72.7 s) waited 9 s + 60 s
+on two 429s from the service, and run 3 S3 (36.9 s) waited 35 s in our own
+15-requests-per-minute limiter. Both are the rate limiter working as designed
+when a test sends ~20 requests a minute.
 
 **The Improvement**
 
-⟨TODO⟩
+⟨after run pending⟩
 
 **What's Still Broken**
 
-⟨TODO⟩
+⟨pending⟩
 
 **How I Used AI**
 
-⟨TODO⟩
+⟨TODO — yours to write: two specific moments, what you asked, what you got,
+what you changed⟩
