@@ -645,6 +645,10 @@ create_fit_card mean includes run 8's 35 s limiter wait; without it the two
 model calls take about the same time. The surprise is search: matching 40
 listings in Python takes almost nothing, so almost all of its 1.2 s must be starting
 `mcp_server.py` as a new process for every call (`mcp_client.call_tool`).
+**Which stage dominates:** the two model calls. Together they take
+1,437 + 4,592 = 6,029 ms of the 7,184 ms summed across stages (84%), and even
+with run 8's limiter wait taken out they are still most of every run. Parsing
+is free, and search (~1.2 s) comes third.
 
 **Run Log and Verdicts**
 
@@ -776,6 +780,18 @@ would have ended exactly like the real S3 failure. The next step after the
 
 Run with `python capstone_eval.py --label after`. Full output:
 `results/capstone_after_2026-11-16_0009.md` and `.json`.
+
+After run log, in the same format as the before run log:
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Numeric sizes parsed to the right value (S1–S5) | 5 of 5 each run | 5/5 | 5/5 | 5/5 | MET |
+| 2. Every returned listing matches the numeric size (S1–S4) | 4 of 4 each run | 4/4 | 4/4 | 4/4 | MET |
+| 3. Unstocked size stops early and names the size (S5) | 1 of 1 each run | 1/1 | 1/1 | 1/1 | MET |
+| 4. Original queries still parse and end in a fit card (R1–R2) | at least 1 of 2 each run | 2/2 | 2/2 | 2/2 | MET |
+| 5. Malformed requests get 400, not 500 (F1–F2) | 2 of 2 each run | 2/2 | 2/2 | 2/2 | MET |
+
+Side by side with the before run, plus the measurements that aren't criteria:
 
 | Criterion | Target | Before 1 | Before 2 | Before 3 | After 1 | After 2 | After 3 | Before → After |
 |---|---|---|---|---|---|---|---|---|
