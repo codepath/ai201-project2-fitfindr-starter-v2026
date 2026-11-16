@@ -246,3 +246,65 @@ history is what shows your criteria existed before your results did.
 units.
 
 `results/` is deliberately **not** in `.gitignore`.
+
+---
+
+## Capstone run path (Path B — local with logs)
+
+**Environment:** Python 3.11, 3.12 or 3.13 (tested on 3.13). Dependencies are
+pinned with upper and lower bounds in `requirements.txt` (python-dotenv,
+google-genai, mcp, flask, gunicorn). No local model files: both model calls go
+to the hosted Gemini API (`gemini-3.5-flash-lite`, set in `config.py`), so the
+only thing the environment needs beyond the packages is a `GEMINI_API_KEY` in
+`.env`. Disk: about 150 MB for the virtual environment.
+
+**From a clean checkout:**
+
+```bash
+git clone https://github.com/xiaogao0616/ai201-project2-fitfindr-starter-v2026.git
+cd ai201-project2-fitfindr-starter-v2026
+python3 -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+cp .env.example .env                 # Windows: copy .env.example .env — then paste your key
+```
+
+**The one command that starts it:**
+
+```bash
+python serve.py
+```
+
+It listens on `http://localhost:5000`. Ask it something from a second terminal:
+
+```bash
+curl -X POST http://localhost:5000/ask -H 'Content-Type: application/json' \
+  -d '{"query": "platform sneakers size 8"}'
+```
+
+Windows PowerShell (curl there is a different program):
+
+```powershell
+Invoke-RestMethod -Method Post -Uri http://localhost:5000/ask -ContentType 'application/json' -Body '{"query": "platform sneakers size 8"}'
+```
+
+**Where the record goes:** every request appends one JSON line to
+`logs/runs.jsonl`. `python runlog.py 12` prints the last twelve. The file is
+committed as the run record.
+
+Note: with `python serve.py` the response cache is on (repeat queries cost 0
+tokens and show `cache_hits: 1`). Set `AI201_CACHE=0` in `.env` to make every
+request a real model call.
+
+**The capstone test run** (no second terminal needed; it calls the same
+`POST /ask` route through Flask's test client, with the cache off):
+
+```bash
+python capstone_eval.py --label before     # every scenario, 3 trials → results/capstone_before_*.md
+python capstone_eval.py --cost 10          # 10 runs of one query, average tokens and ms
+python capstone_eval.py --label after      # after the improvement
+```
+
+A full 3-trial run makes about 36 model requests. The limiter in
+`generate.py` allows 15 a minute, so expect `[rate limit] ... Waiting` lines
+and roughly 3–4 minutes in total. That is normal.
