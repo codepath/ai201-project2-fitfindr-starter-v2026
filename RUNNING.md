@@ -297,17 +297,21 @@ Check the setup with `python test.py` before starting.
 python serve.py
 ```
 
-It listens on `http://localhost:5000`. Ask it something from a second terminal:
+It listens on `http://localhost:5000`. Leave that terminal running, open a second terminal in the same folder, and send a request.
+
+macOS / Linux:
 
 ```bash
 curl -X POST http://localhost:5000/ask -H 'Content-Type: application/json' \
   -d '{"query": "platform sneakers size 8"}'
 ```
 
-Windows PowerShell (curl there is a different program):
+Windows (PowerShell). Use `Invoke-RestMethod`, not `curl`:
 
 ```powershell
-Invoke-RestMethod -Method Post -Uri http://localhost:5000/ask -ContentType 'application/json' -Body '{"query": "platform sneakers size 8"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:5000/ask `
+  -ContentType 'application/json' `
+  -Body '{"query": "platform sneakers size 8"}'
 ```
 
 **Where the record goes:** every request appends one JSON line to
