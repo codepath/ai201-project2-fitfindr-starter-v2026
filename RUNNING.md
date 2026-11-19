@@ -263,7 +263,7 @@ only thing the environment needs beyond the packages is a `GEMINI_API_KEY` in
 ```bash
 git clone https://github.com/xiaogao0616/ai201-project2-fitfindr-starter-v2026.git
 cd ai201-project2-fitfindr-starter-v2026
-python3 -m venv .venv
+python3 -m venv .venv               # Windows: python -m venv .venv  (python3 there opens the Microsoft Store)
 source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 cp .env.example .env                 # Windows: copy .env.example .env — then paste your key
