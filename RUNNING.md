@@ -260,14 +260,36 @@ only thing the environment needs beyond the packages is a `GEMINI_API_KEY` in
 
 **From a clean checkout:**
 
+macOS / Linux:
+
 ```bash
 git clone https://github.com/xiaogao0616/ai201-project2-fitfindr-starter-v2026.git
 cd ai201-project2-fitfindr-starter-v2026
-python3 -m venv .venv               # Windows: python -m venv .venv  (python3 there opens the Microsoft Store)
-source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env                 # Windows: copy .env.example .env — then paste your key
+cp .env.example .env
 ```
+
+Windows (PowerShell). Use `python`, not `python3`:
+
+```powershell
+git clone https://github.com/xiaogao0616/ai201-project2-fitfindr-starter-v2026.git
+cd ai201-project2-fitfindr-starter-v2026
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+Then open the new `.env` file (not `.env.example`) and replace `your_key_here`
+with your Gemini API key, no spaces around the `=`:
+
+```
+GEMINI_API_KEY=your-real-key
+```
+
+Check the setup with `python test.py` before starting.
 
 **The one command that starts it:**
 
